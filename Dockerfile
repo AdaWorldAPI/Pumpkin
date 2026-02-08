@@ -10,15 +10,12 @@ RUN rustup show active-toolchain || rustup toolchain install
 RUN rustup component add rustfmt
 
 # build release
-RUN --mount=type=cache,id=pumpkin-target,sharing=private,target=/pumpkin/target     --mount=type=cache,id=cargo-git,target=/usr/local/cargo/git/db     --mount=type=cache,id=cargo-registry,target=/usr/local/cargo/registry/     cargo build --release && cp target/release/pumpkin ./pumpkin.release
+RUN cargo build --release && cp target/release/pumpkin ./pumpkin.release
 
 FROM alpine:3.23
 
 COPY --from=builder /pumpkin/pumpkin.release /bin/pumpkin
 
-# set workdir to /pumpkin, this is required to influence the PWD environment variable
-# it allows for bind mounting the server files without overwriting the pumpkin
-# executable (without requiring an `docker cp`-ing the binary to the host folder)
 WORKDIR /pumpkin
 
 RUN apk add --no-cache libgcc && chown 2613:2613 .
