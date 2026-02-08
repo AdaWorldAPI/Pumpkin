@@ -164,3 +164,6 @@ version_history.json
 world_nether/
 world_the_end/
 
+# === FORK-SPECIFIC (Railway deployment) ===
+Dockerfile
+docker-compose.yml
