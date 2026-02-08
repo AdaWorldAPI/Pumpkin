@@ -1,7 +1,6 @@
 FROM rust:1-alpine3.23 AS builder
 ENV RUSTFLAGS="-C target-feature=-crt-static"
-RUN apk add --no-cache musl-dev     # Required for git-version
-    git
+RUN apk add --no-cache musl-dev git
 
 WORKDIR /pumpkin
 COPY . /pumpkin
@@ -9,7 +8,6 @@ COPY . /pumpkin
 RUN rustup show active-toolchain || rustup toolchain install
 RUN rustup component add rustfmt
 
-# build release
 RUN cargo build --release && cp target/release/pumpkin ./pumpkin.release
 
 FROM alpine:3.23
