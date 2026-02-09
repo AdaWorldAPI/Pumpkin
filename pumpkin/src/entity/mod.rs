@@ -398,6 +398,96 @@ pub struct Entity {
     pub removed: AtomicBool,
 }
 
+/// Pure, synchronous collision math extracted from `adjust_movement_for_collisions`.
+/// Returns (adjusted_movement, supporting_block_pos, horizontal_collision)
+pub fn compute_collision_math(
+    mut movement: Vector3<f64>,
+    mut bounding_box: BoundingBox,
+    collisions: Vec<BoundingBox>,
+    block_positions: Vec<(usize, BlockPos)>,
+) -> (Vector3<f64>, Option<BlockPos>, bool) {
+    if movement.length_squared() == 0.0 {
+        return (movement, None, false);
+    }
+
+    if collisions.is_empty() {
+        return (movement, None, false);
+    }
+
+    // Y-Axis adjustment
+    let mut adjusted_movement = movement;
+    let mut supporting_block_pos: Option<BlockPos> = None;
+
+    if movement.get_axis(Axis::Y) != 0.0 {
+        let mut max_time = 1.0;
+
+        let mut positions = block_positions.into_iter();
+
+        let (mut collisions_len, mut position) = if let Some((len, pos)) = positions.next()
+        {
+            (len, pos)
+        } else {
+            return (adjusted_movement, None, false);
+        };
+
+        for (i, inert_box) in collisions.iter().enumerate() {
+            if i == collisions_len {
+                if let Some((len, pos)) = positions.next() {
+                    collisions_len = len;
+                    position = pos;
+                } else {
+                    break;
+                }
+            }
+
+            if let Some(collision_time) = bounding_box.calculate_collision_time(
+                inert_box,
+                adjusted_movement,
+                Axis::Y,
+                max_time,
+            ) {
+                max_time = collision_time;
+                supporting_block_pos = Some(position);
+            }
+        }
+
+        if max_time != 1.0 {
+            let changed_component = adjusted_movement.get_axis(Axis::Y) * max_time;
+            adjusted_movement.set_axis(Axis::Y, changed_component);
+        }
+    }
+
+    // Horizontal axes
+    let mut horizontal_collision = false;
+
+    for axis in Axis::horizontal() {
+        if movement.get_axis(axis) == 0.0 {
+            continue;
+        }
+
+        let mut max_time = 1.0;
+
+        for inert_box in &collisions {
+            if let Some(collision_time) = bounding_box.calculate_collision_time(
+                inert_box,
+                adjusted_movement,
+                axis,
+                max_time,
+            ) {
+                max_time = collision_time;
+            }
+        }
+
+        if max_time != 1.0 {
+            let changed_component = adjusted_movement.get_axis(axis) * max_time;
+            adjusted_movement.set_axis(axis, changed_component);
+            horizontal_collision = true;
+        }
+    }
+
+    (adjusted_movement, supporting_block_pos, horizontal_collision)
+}
+
 impl Entity {
     pub fn new(
         world: Arc<World>,
@@ -637,10 +727,12 @@ impl Entity {
 
     #[expect(clippy::float_cmp)]
     async fn adjust_movement_for_collisions(&self, movement: Vector3<f64>) -> Vector3<f64> {
+        // Offload heavy collision math to a blocking thread to avoid starving
+        // the async runtime. We'll collect minimal data here and perform the
+        // pure computation in `compute_collision_math`.
+
         self.on_ground.store(false, Ordering::SeqCst);
-
         self.supporting_block_pos.store(None);
-
         self.horizontal_collision.store(false, Ordering::SeqCst);
 
         if movement.length_squared() == 0.0 {
@@ -649,6 +741,7 @@ impl Entity {
 
         let bounding_box = self.bounding_box.load();
 
+        // Collect collision candidates from the world (async, short critical section)
         let (collisions, block_positions) = self
             .world
             .load()
@@ -659,92 +752,32 @@ impl Entity {
             return movement;
         }
 
-        let mut adjusted_movement = movement;
+        // Move the heavy math to a blocking thread. Clone only what's needed.
+        let movement_clone = movement;
+        let bbox_clone = bounding_box;
+        let collisions_clone = collisions.clone();
+        let block_positions_clone = block_positions.clone();
 
-        // Y-Axis adjustment
+        let (final_move, supporting_pos, horiz_collision) = tokio::task::spawn_blocking(
+            move || {
+                compute_collision_math(
+                    movement_clone,
+                    bbox_clone,
+                    collisions_clone,
+                    block_positions_clone,
+                )
+            },
+        )
+        .await
+        .unwrap_or((movement, None, false));
 
-        if movement.get_axis(Axis::Y) != 0.0 {
-            let mut max_time = 1.0;
-
-            let mut positions = block_positions.into_iter();
-
-            let Some((mut collisions_len, mut position)) = positions.next() else {
-                log::warn!("Empty block positions iterator in collision detection");
-                return adjusted_movement;
-            };
-
-            let mut supporting_block_pos = None;
-
-            for (i, inert_box) in collisions.iter().enumerate() {
-                if i == collisions_len {
-                    if let Some((len, pos)) = positions.next() {
-                        collisions_len = len;
-                        position = pos;
-                    } else {
-                        log::warn!(
-                            "Unexpected end of block positions iterator in collision detection"
-                        );
-                        break;
-                    }
-                }
-
-                if let Some(collision_time) = bounding_box.calculate_collision_time(
-                    inert_box,
-                    adjusted_movement,
-                    Axis::Y,
-                    max_time,
-                ) {
-                    max_time = collision_time;
-
-                    supporting_block_pos = Some(position);
-                }
-            }
-
-            if max_time != 1.0 {
-                let changed_component = adjusted_movement.get_axis(Axis::Y) * max_time;
-
-                adjusted_movement.set_axis(Axis::Y, changed_component);
-            }
-
-            self.on_ground
-                .store(supporting_block_pos.is_some(), Ordering::SeqCst);
-
-            self.supporting_block_pos.store(supporting_block_pos);
-        }
-
-        let mut horizontal_collision = false;
-
-        for axis in Axis::horizontal() {
-            if movement.get_axis(axis) == 0.0 {
-                continue;
-            }
-
-            let mut max_time = 1.0;
-
-            for inert_box in &collisions {
-                if let Some(collision_time) = bounding_box.calculate_collision_time(
-                    inert_box,
-                    adjusted_movement,
-                    axis,
-                    max_time,
-                ) {
-                    max_time = collision_time;
-                }
-            }
-
-            if max_time != 1.0 {
-                let changed_component = adjusted_movement.get_axis(axis) * max_time;
-
-                adjusted_movement.set_axis(axis, changed_component);
-
-                horizontal_collision = true;
-            }
-        }
-
+        self.on_ground
+            .store(supporting_pos.is_some(), Ordering::SeqCst);
+        self.supporting_block_pos.store(supporting_pos);
         self.horizontal_collision
-            .store(horizontal_collision, Ordering::SeqCst);
+            .store(horiz_collision, Ordering::SeqCst);
 
-        adjusted_movement
+        final_move
     }
 
     /// Applies knockback to the entity, following vanilla Minecraft's mechanics.
