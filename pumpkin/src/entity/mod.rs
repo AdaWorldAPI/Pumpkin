@@ -668,30 +668,23 @@ impl Entity {
 
             let mut positions = block_positions.into_iter();
 
-            let mut position_entry = match positions.next() {
-                Some((len, pos)) => (len, pos),
-                None => {
-                    log::warn!("Empty block positions iterator in collision detection");
-                    return adjusted_movement;
-                }
+            let Some((mut collisions_len, mut position)) = positions.next() else {
+                log::warn!("Empty block positions iterator in collision detection");
+                return adjusted_movement;
             };
-            let (mut collisions_len, mut position) = position_entry;
 
             let mut supporting_block_pos = None;
 
             for (i, inert_box) in collisions.iter().enumerate() {
                 if i == collisions_len {
-                    match positions.next() {
-                        Some((len, pos)) => {
-                            collisions_len = len;
-                            position = pos;
-                        }
-                        None => {
-                            log::warn!(
-                                "Unexpected end of block positions iterator in collision detection"
-                            );
-                            break;
-                        }
+                    if let Some((len, pos)) = positions.next() {
+                        collisions_len = len;
+                        position = pos;
+                    } else {
+                        log::warn!(
+                            "Unexpected end of block positions iterator in collision detection"
+                        );
+                        break;
                     }
                 }
 
@@ -1914,7 +1907,7 @@ impl Entity {
         let mut buf = Vec::new();
         for metadata in meta {
             if let Err(e) = metadata.write(&mut buf, &MinecraftVersion::V_1_21_11) {
-                log::warn!("Failed to write entity metadata to buffer: {}", e);
+                log::warn!("Failed to write entity metadata to buffer: {e}");
                 return;
             }
         }
@@ -1925,7 +1918,7 @@ impl Entity {
                 let mut buf = Vec::new();
                 for metadata in meta {
                     if let Err(e) = metadata.write(&mut buf, &client.version.load()) {
-                        log::warn!("Failed to write entity metadata for client: {}", e);
+                        log::warn!("Failed to write entity metadata for client: {e}");
                         return;
                     }
                 }

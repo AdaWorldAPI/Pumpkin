@@ -464,24 +464,20 @@ impl BedrockClient {
                     merged.extend_from_slice(&f.payload);
                 } else {
                     log::warn!(
-                        "Received malformed Bedrock frame: missing fragment in compound {}",
-                        compound_id
+                        "Received malformed Bedrock frame: missing fragment in compound {compound_id}"
                     );
                     return Ok(());
                 }
             }
 
             // Extract first frame safely
-            frame = match frames[0].take() {
-                Some(f) => f,
-                None => {
-                    log::warn!(
-                        "Received malformed Bedrock frame: missing first fragment in compound {}",
-                        compound_id
-                    );
-                    return Ok(());
-                }
+            let Some(f) = frames[0].take() else {
+                log::warn!(
+                    "Received malformed Bedrock frame: missing first fragment in compound {compound_id}"
+                );
+                return Ok(());
             };
+            frame = f;
 
             frame.payload = merged;
             frame.split_size = 0;
