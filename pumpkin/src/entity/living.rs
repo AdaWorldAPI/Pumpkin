@@ -39,7 +39,9 @@ use pumpkin_inventory::entity_equipment::EntityEquipment;
 use pumpkin_nbt::compound::NbtCompound;
 use pumpkin_nbt::tag::NbtTag;
 use pumpkin_protocol::codec::var_int::VarInt;
-use pumpkin_protocol::java::client::play::{CHurtAnimation, CSetPlayerInventory, CTakeItemEntity};
+use pumpkin_protocol::java::client::play::{
+    Animation, CEntityAnimation, CHurtAnimation, CSetPlayerInventory, CTakeItemEntity,
+};
 use pumpkin_protocol::{
     codec::item_stack_seralizer::ItemStackSerializer,
     java::client::play::{CDamageEvent, CSetEquipment, Metadata},
@@ -363,6 +365,18 @@ impl LivingEntity {
         } else {
             final_gravity
         }
+    }
+
+    pub async fn swing_hand(&self) {
+        // TODO: radius
+        self.entity
+            .world
+            .load()
+            .broadcast_packet_all(&CEntityAnimation::new(
+                self.entity_id().into(),
+                Animation::SwingMainArm,
+            ))
+            .await;
     }
 
     async fn tick_movement(&self, server: &Server, caller: Arc<dyn EntityBase>) {
@@ -1101,8 +1115,12 @@ impl LivingEntity {
         self.entity_equipment.lock().await.get(slot)
     }
 
+    pub fn can_take_damage(&self) -> bool {
+        !self.entity.invulnerable.load(Ordering::Relaxed) && self.is_part_of_game()
+    }
+
     pub fn is_part_of_game(&self) -> bool {
-        self.is_spectator() && self.entity.is_alive()
+        !self.is_spectator() && self.entity.is_alive()
     }
 
     pub async fn reset_state(&self) {

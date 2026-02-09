@@ -741,7 +741,7 @@ impl Entity {
 
         // Skip expensive collision checks if no players are online to conserve CPU
         let world = self.world.load();
-        if world.players.is_empty() {
+            if world.players.load().is_empty() {
             return movement;
         }
 
