@@ -739,12 +739,16 @@ impl Entity {
             return movement;
         }
 
+        // Skip expensive collision checks if no players are online to conserve CPU
+        let world = self.world.load();
+        if world.players.is_empty() {
+            return movement;
+        }
+
         let bounding_box = self.bounding_box.load();
 
         // Collect collision candidates from the world (async, short critical section)
-        let (collisions, block_positions) = self
-            .world
-            .load()
+        let (collisions, block_positions) = world
             .get_block_collisions(bounding_box.stretch(movement))
             .await;
 
