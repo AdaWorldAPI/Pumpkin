@@ -8,9 +8,7 @@ use crate::entity::ai::goal::zombie_attack::ZombieAttackGoal;
 use crate::entity::ai::goal::{Controls, Goal, GoalFuture, ParentHandle};
 use crate::entity::{
     Entity, NBTStorage,
-    ai::goal::{
-        active_target::ActiveTargetGoal, look_at_entity::LookAtEntityGoal, swim::SwimGoal,
-    },
+    ai::goal::{active_target::ActiveTargetGoal, look_at_entity::LookAtEntityGoal, swim::SwimGoal},
 };
 use crate::world::World;
 use pumpkin_data::Block;

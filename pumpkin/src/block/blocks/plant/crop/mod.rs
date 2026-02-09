@@ -58,9 +58,7 @@ trait CropBlockBase: PlantBlockBase {
                 // Fire BlockGrowEvent before advancing crop age (ARCH-023)
                 if let Some(server) = world.server.upgrade() {
                     let event = crate::plugin::api::events::block::block_grow::BlockGrowEvent::new(
-                        block,
-                        *pos,
-                        block, // same block type, different state
+                        block, *pos, block, // same block type, different state
                     );
                     let event = server.plugin_manager.fire(event).await;
                     if event.cancelled {

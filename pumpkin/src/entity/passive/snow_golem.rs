@@ -29,10 +29,7 @@ impl SnowGolemEntity {
             let mut goal_selector = mob_arc.mob_entity.goals_selector.lock().await;
 
             goal_selector.add_goal(0, SwimGoal::new());
-            goal_selector.add_goal(
-                2,
-                RangedAttackGoal::new(1.0, 20, 10.0),
-            );
+            goal_selector.add_goal(2, RangedAttackGoal::new(1.0, 20, 10.0));
             goal_selector.add_goal(6, WanderAroundGoal::new(1.0));
             goal_selector.add_goal(
                 7,

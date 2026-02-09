@@ -5,9 +5,8 @@ use pumpkin_data::entity::EntityType;
 use crate::entity::{
     Entity, NBTStorage,
     ai::goal::{
-        breed, follow_parent, look_around::LookAroundGoal,
-        look_at_entity::LookAtEntityGoal, panic::PanicGoal, swim::SwimGoal, tempt,
-        wander_around::WanderAroundGoal,
+        breed, follow_parent, look_around::LookAroundGoal, look_at_entity::LookAtEntityGoal,
+        panic::PanicGoal, swim::SwimGoal, tempt, wander_around::WanderAroundGoal,
     },
     mob::{Mob, MobEntity},
 };

@@ -34,10 +34,7 @@ impl BlazeEntity {
             let mut goal_selector = mob_arc.mob_entity.goals_selector.lock().await;
             let mut target_selector = mob_arc.mob_entity.target_selector.lock().await;
 
-            goal_selector.add_goal(
-                4,
-                RangedAttackGoal::new(1.0, 40, 16.0),
-            );
+            goal_selector.add_goal(4, RangedAttackGoal::new(1.0, 40, 16.0));
             goal_selector.add_goal(6, WanderAroundGoal::new(1.0));
             goal_selector.add_goal(
                 7,

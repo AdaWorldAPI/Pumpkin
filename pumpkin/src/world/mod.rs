@@ -28,13 +28,10 @@ use crate::{
         block::block_break::BlockBreakEvent,
         entity::entity_spawn::EntitySpawnEvent,
         player::{
-            player_join::PlayerJoinEvent,
-            player_leave::PlayerLeaveEvent,
+            player_join::PlayerJoinEvent, player_leave::PlayerLeaveEvent,
             player_respawn::PlayerRespawnEvent,
         },
-        world::{
-            chunk_load::ChunkLoad, chunk_save::ChunkSave, chunk_send::ChunkSend,
-        },
+        world::{chunk_load::ChunkLoad, chunk_save::ChunkSave, chunk_send::ChunkSend},
     },
     server::Server,
 };
@@ -3345,12 +3342,13 @@ impl World {
             {
                 // Fire BlockPhysicsEvent for plugin cancellation support (ARCH-023)
                 if let Some(server) = self.server.upgrade() {
-                    let event = crate::plugin::api::events::block::block_physics::BlockPhysicsEvent::new(
-                        neighbor_block,
-                        neighbor_pos,
-                        source_block,
-                        *block_pos,
-                    );
+                    let event =
+                        crate::plugin::api::events::block::block_physics::BlockPhysicsEvent::new(
+                            neighbor_block,
+                            neighbor_pos,
+                            source_block,
+                            *block_pos,
+                        );
                     let event = server.plugin_manager.fire(event).await;
                     if event.cancelled {
                         continue;

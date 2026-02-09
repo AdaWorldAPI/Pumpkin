@@ -289,10 +289,7 @@ mod tests {
 
         let dust_power = true;
         let result = if !dust_power && is_wire { 0u8 } else { 15u8 };
-        assert_eq!(
-            result, 15,
-            "Wire should contribute when dust_power=true"
-        );
+        assert_eq!(result, 15, "Wire should contribute when dust_power=true");
     }
 
     /// `block_receives_redstone_power` checks ALL 6 directions for any power source.

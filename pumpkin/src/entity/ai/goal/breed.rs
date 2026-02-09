@@ -93,10 +93,7 @@ impl Goal for BreedGoal {
             for entity in nearby.values() {
                 let ent = entity.get_entity();
                 // Must be same entity type, different entity, and alive
-                if ent.entity_type != mob_type
-                    || ent.entity_id == my_id
-                    || !ent.is_alive()
-                {
+                if ent.entity_type != mob_type || ent.entity_id == my_id || !ent.is_alive() {
                     continue;
                 }
 
@@ -132,8 +129,7 @@ impl Goal for BreedGoal {
                 .is_some_and(|partner| {
                     let partner_ent = partner.get_entity();
                     partner_ent.is_alive()
-                        && partner_ent.entity_type
-                            == mob_entity.living_entity.entity.entity_type
+                        && partner_ent.entity_type == mob_entity.living_entity.entity.entity_type
                 })
         })
     }

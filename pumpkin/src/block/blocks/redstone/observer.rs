@@ -260,11 +260,16 @@ mod tests {
                 props.powered = powered;
 
                 for dir in all_dirs {
-                    let expected =
-                        if facing.to_block_direction() == dir && powered { 15u8 } else { 0u8 };
-                    let actual =
-                        if props.facing.to_block_direction() == dir && props.powered { 15u8 }
-                        else { 0u8 };
+                    let expected = if facing.to_block_direction() == dir && powered {
+                        15u8
+                    } else {
+                        0u8
+                    };
+                    let actual = if props.facing.to_block_direction() == dir && props.powered {
+                        15u8
+                    } else {
+                        0u8
+                    };
                     assert_eq!(
                         actual, expected,
                         "facing={facing:?} powered={powered} dir={dir:?}: expected {expected} got {actual}"

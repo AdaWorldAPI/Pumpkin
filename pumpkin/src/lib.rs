@@ -313,12 +313,10 @@ impl PumpkinServer {
         let plugin_count = self.server.plugin_manager.loaded_plugins().await.len();
         self.server
             .plugin_manager
-            .fire(
-                plugin::server::server_started::ServerStartedEvent::new(
-                    world_count,
-                    plugin_count,
-                ),
-            )
+            .fire(plugin::server::server_started::ServerStartedEvent::new(
+                world_count,
+                plugin_count,
+            ))
             .await;
     }
 
@@ -349,9 +347,9 @@ impl PumpkinServer {
         // Notify plugins that the server is stopping
         self.server
             .plugin_manager
-            .fire(
-                plugin::server::server_stop::ServerStopEvent::new("Server shutting down".to_string()),
-            )
+            .fire(plugin::server::server_stop::ServerStopEvent::new(
+                "Server shutting down".to_string(),
+            ))
             .await;
 
         if let Err(e) = self

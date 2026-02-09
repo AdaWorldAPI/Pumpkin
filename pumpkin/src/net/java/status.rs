@@ -5,10 +5,8 @@ use pumpkin_protocol::{
 };
 
 use crate::{
-    net::java::JavaClient,
-    plugin::api::events::Payload,
-    plugin::api::events::server::server_list_ping::ServerListPingEvent,
-    server::Server,
+    net::java::JavaClient, plugin::api::events::Payload,
+    plugin::api::events::server::server_list_ping::ServerListPingEvent, server::Server,
 };
 
 impl JavaClient {

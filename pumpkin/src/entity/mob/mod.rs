@@ -51,10 +51,10 @@ pub mod vindicator;
 pub mod warden;
 pub mod witch;
 pub mod wither_skeleton;
+pub mod zoglin;
 pub mod zombie;
 pub mod zombie_villager;
 pub mod zombified_piglin;
-pub mod zoglin;
 
 pub struct MobEntity {
     pub living_entity: LivingEntity,

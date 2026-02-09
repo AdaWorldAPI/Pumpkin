@@ -29,8 +29,8 @@ impl FollowOwnerGoal {
             goal_control: Controls::MOVE | Controls::LOOK,
             owner_id: None,
             speed,
-            start_distance_sq: 100.0, // 10 blocks
-            stop_distance_sq: 4.0,    // 2 blocks
+            start_distance_sq: 100.0,    // 10 blocks
+            stop_distance_sq: 4.0,       // 2 blocks
             teleport_distance_sq: 144.0, // 12 blocks
         })
     }

@@ -7,8 +7,7 @@ use crate::entity::player::Player;
 use crate::item::{ItemBehaviour, ItemMetadata};
 use crate::server::Server;
 use pumpkin_data::block_properties::{
-    BeeNestLikeProperties, BlockProperties, HorizontalFacing, Integer0To5,
-    WallTorchLikeProperties,
+    BeeNestLikeProperties, BlockProperties, HorizontalFacing, Integer0To5, WallTorchLikeProperties,
 };
 use pumpkin_data::entity::EntityType;
 use pumpkin_data::item::Item;

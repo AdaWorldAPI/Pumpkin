@@ -23,11 +23,7 @@ pub struct FoodLevelChangeEvent {
 
 impl FoodLevelChangeEvent {
     #[must_use]
-    pub const fn new(
-        entity_id: i32,
-        entity_type: &'static EntityType,
-        food_level: i32,
-    ) -> Self {
+    pub const fn new(entity_id: i32, entity_type: &'static EntityType, food_level: i32) -> Self {
         Self {
             entity_id,
             entity_type,

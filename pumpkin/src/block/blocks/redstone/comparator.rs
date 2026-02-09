@@ -497,11 +497,7 @@ mod tests {
             if side >= back {
                 return 0;
             }
-            if subtract {
-                back - side
-            } else {
-                back
-            }
+            if subtract { back - side } else { back }
         }
 
         // Compare mode: back > side → outputs back power
@@ -552,7 +548,10 @@ mod tests {
                     assert_eq!(compare_out, 0, "Compare({back},{side}) should be 0");
                     assert_eq!(subtract_out, 0, "Subtract({back},{side}) should be 0");
                 } else {
-                    assert_eq!(compare_out, back, "Compare({back},{side}) should pass through");
+                    assert_eq!(
+                        compare_out, back,
+                        "Compare({back},{side}) should pass through"
+                    );
                     assert_eq!(
                         subtract_out,
                         back - side,
@@ -631,13 +630,19 @@ mod tests {
                     assert!(compare, "back>side should power (compare {back}>{side})");
                     assert!(subtract, "back>side should power (subtract {back}>{side})");
                 } else if back == side {
-                    assert!(compare, "back==side should power in compare ({back}=={side})");
+                    assert!(
+                        compare,
+                        "back==side should power in compare ({back}=={side})"
+                    );
                     assert!(
                         !subtract,
                         "back==side should NOT power in subtract ({back}=={side})"
                     );
                 } else {
-                    assert!(!compare, "back<side should not power (compare {back}<{side})");
+                    assert!(
+                        !compare,
+                        "back<side should not power (compare {back}<{side})"
+                    );
                     assert!(
                         !subtract,
                         "back<side should not power (subtract {back}<{side})"

@@ -1,7 +1,6 @@
 use crate::command::CommandResult;
 use crate::command::{
-    CommandExecutor, CommandSender, args::ConsumedArgs, tree::CommandTree,
-    tree::builder::literal,
+    CommandExecutor, CommandSender, args::ConsumedArgs, tree::CommandTree, tree::builder::literal,
 };
 use pumpkin_util::text::TextComponent;
 

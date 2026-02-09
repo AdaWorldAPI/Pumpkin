@@ -450,22 +450,46 @@ impl BedrockClient {
 
             let mut frames = compounds.remove(&compound_id).unwrap();
 
-            // Safety: We already checked that all frames are Some at this point
-            let len = frames
+            // Calculate length of merged frames safely
+            let len: usize = frames
                 .iter()
-                .map(|frame| unsafe { frame.as_ref().unwrap_unchecked().payload.len() })
+                .filter_map(|f| f.as_ref().map(|frame| frame.payload.len()))
                 .sum();
 
             let mut merged = Vec::with_capacity(len);
 
-            for frame in &frames {
-                merged.extend_from_slice(unsafe { &frame.as_ref().unwrap_unchecked().payload });
+            // Safely merge frame payloads
+            for frame_opt in &frames {
+                if let Some(f) = frame_opt {
+                    merged.extend_from_slice(&f.payload);
+                } else {
+                    log::warn!(
+                        "Received malformed Bedrock frame: missing fragment in compound {}",
+                        compound_id
+                    );
+                    return Ok(());
+                }
             }
 
-            frame = unsafe { frames[0].take().unwrap_unchecked() };
+            // Extract first frame safely
+            frame = match frames[0].take() {
+                Some(f) => f,
+                None => {
+                    log::warn!(
+                        "Received malformed Bedrock frame: missing first fragment in compound {}",
+                        compound_id
+                    );
+                    return Ok(());
+                }
+            };
 
             frame.payload = merged;
             frame.split_size = 0;
+        }
+
+        if frame.payload.is_empty() {
+            log::warn!("Received empty Bedrock frame payload");
+            return Ok(());
         }
 
         let mut payload = Cursor::new(frame.payload);

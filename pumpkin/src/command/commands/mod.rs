@@ -166,18 +166,9 @@ fn register_commands(dispatcher: &mut CommandDispatcher, basic_config: &BasicCon
     // Four
     dispatcher.register(stop::init_command_tree(), "minecraft:command.stop");
     dispatcher.register(perf::init_command_tree(), "minecraft:command.perf");
-    dispatcher.register(
-        save_all::init_command_tree(),
-        "minecraft:command.save-all",
-    );
-    dispatcher.register(
-        save_off::init_command_tree(),
-        "minecraft:command.save-off",
-    );
-    dispatcher.register(
-        save_on::init_command_tree(),
-        "minecraft:command.save-on",
-    );
+    dispatcher.register(save_all::init_command_tree(), "minecraft:command.save-all");
+    dispatcher.register(save_off::init_command_tree(), "minecraft:command.save-off");
+    dispatcher.register(save_on::init_command_tree(), "minecraft:command.save-on");
 }
 
 async fn register_permissions(permission_registry: &RwLock<PermissionRegistry>) {

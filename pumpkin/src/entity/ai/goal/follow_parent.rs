@@ -66,10 +66,7 @@ impl Goal for FollowParentGoal {
             for entity in nearby.values() {
                 let ent = entity.get_entity();
                 // Must be same entity type, different entity, alive
-                if ent.entity_type != mob_type
-                    || ent.entity_id == my_id
-                    || !ent.is_alive()
-                {
+                if ent.entity_type != mob_type || ent.entity_id == my_id || !ent.is_alive() {
                     continue;
                 }
 
@@ -116,8 +113,7 @@ impl Goal for FollowParentGoal {
                 let dist_sq = mob_pos.squared_distance_to_vec(&parent_pos);
 
                 // Continue if not too far and not already close enough
-                dist_sq <= self.search_range * self.search_range
-                    && dist_sq > self.stop_distance_sq
+                dist_sq <= self.search_range * self.search_range && dist_sq > self.stop_distance_sq
             } else {
                 false
             }

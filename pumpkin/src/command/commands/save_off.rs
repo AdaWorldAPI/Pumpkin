@@ -1,9 +1,7 @@
 use std::sync::atomic::Ordering;
 
 use crate::command::CommandResult;
-use crate::command::{
-    CommandExecutor, CommandSender, args::ConsumedArgs, tree::CommandTree,
-};
+use crate::command::{CommandExecutor, CommandSender, args::ConsumedArgs, tree::CommandTree};
 use pumpkin_util::text::TextComponent;
 
 const NAMES: [&str; 1] = ["save-off"];
@@ -22,10 +20,7 @@ impl CommandExecutor for Executor {
         Box::pin(async move {
             server.autosave_enabled.store(false, Ordering::Relaxed);
             sender
-                .send_message(TextComponent::translate(
-                    "commands.save.disabled",
-                    [],
-                ))
+                .send_message(TextComponent::translate("commands.save.disabled", []))
                 .await;
             Ok(1)
         })

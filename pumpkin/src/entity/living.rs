@@ -1393,8 +1393,7 @@ impl EntityBase for LivingEntity {
                                 .find(|p| p.entity_id() == player_ref.entity_id())
                                 .cloned()
                         {
-                            let event =
-                                PlayerItemConsumeEvent::new(player_arc, item.clone());
+                            let event = PlayerItemConsumeEvent::new(player_arc, item.clone());
                             let event = server.plugin_manager.fire(event).await;
                             consume_cancelled = event.cancelled;
                         }

@@ -22,10 +22,7 @@ impl DrownedEntity {
             let mut goal_selector = mob_arc.entity.mob_entity.goals_selector.lock().await;
             let mut target_selector = mob_arc.entity.mob_entity.target_selector.lock().await;
 
-            goal_selector.add_goal(
-                2,
-                RangedAttackGoal::new(1.0, 20, 10.0),
-            );
+            goal_selector.add_goal(2, RangedAttackGoal::new(1.0, 20, 10.0));
 
             target_selector.add_goal(
                 2,

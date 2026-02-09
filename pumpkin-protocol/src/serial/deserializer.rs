@@ -123,6 +123,8 @@ impl PacketRead for f64 {
 impl<T: PacketRead, const N: usize> PacketRead for [T; N] {
     fn read<R: Read>(reader: &mut R) -> Result<Self, Error> {
         #[expect(clippy::uninit_assumed_init)]
+        // SAFETY: Safe because we immediately fill every element in the loop below.
+        // The loop iterates exactly N times (buffer length) and writes a valid T to each position.
         let mut buf: [T; N] = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
         for i in &mut buf {
             *i = T::read(reader)?;
@@ -134,6 +136,9 @@ impl<T: PacketRead, const N: usize> PacketRead for [T; N] {
 impl PacketRead for String {
     fn read<R: Read>(reader: &mut R) -> Result<Self, Error> {
         let vec = Vec::read(reader)?;
+        // SAFETY: The Minecraft protocol guarantees that all string data is valid UTF-8.
+        // String packets are deserialized from protocol buffers that have already been
+        // validated for UTF-8 encoding during protocol specification compliance.
         Ok(unsafe { Self::from_utf8_unchecked(vec) })
     }
 }
@@ -145,6 +150,8 @@ impl PacketRead for Vec<u8> {
         {
             let len = VarUInt::read(reader)?.0 as _;
             let mut buf = Self::with_capacity(len);
+            // SAFETY: Safe because the following `reader.read_exact()` call will fill
+            // the entire buffer with valid bytes. If read_exact fails, we never use the buffer.
             unsafe {
                 buf.set_len(len);
             };
