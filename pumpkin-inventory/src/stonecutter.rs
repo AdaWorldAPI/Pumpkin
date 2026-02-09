@@ -1,7 +1,7 @@
 use std::{any::Any, pin::Pin, sync::Arc};
 
 use pumpkin_data::item::Item;
-use pumpkin_data::recipes::{StonecuttingRecipe, RECIPES_STONECUTTING};
+use pumpkin_data::recipes::{RECIPES_STONECUTTING, StonecuttingRecipe};
 use pumpkin_data::screen::WindowType;
 use pumpkin_world::{
     inventory::{Clearable, Inventory, InventoryFuture, split_stack},
@@ -22,9 +22,7 @@ use std::sync::atomic::{AtomicU8, Ordering};
 
 /// Returns all stonecutting recipes whose ingredient matches the given item.
 #[must_use]
-pub fn get_stonecutting_recipes_for(
-    item: &Item,
-) -> Vec<&'static StonecuttingRecipe> {
+pub fn get_stonecutting_recipes_for(item: &Item) -> Vec<&'static StonecuttingRecipe> {
     RECIPES_STONECUTTING
         .iter()
         .filter(|recipe| recipe.ingredient.match_item(item))
@@ -295,10 +293,7 @@ impl StonecutterScreenHandler {
 }
 
 impl ScreenHandler for StonecutterScreenHandler {
-    fn on_closed<'a>(
-        &'a mut self,
-        player: &'a dyn InventoryPlayer,
-    ) -> ScreenHandlerFuture<'a, ()> {
+    fn on_closed<'a>(&'a mut self, player: &'a dyn InventoryPlayer) -> ScreenHandlerFuture<'a, ()> {
         Box::pin(async move {
             self.default_on_closed(player).await;
             self.drop_inventory(player, self.input_inventory.clone())
@@ -468,7 +463,9 @@ mod tests {
         // Verify all returned recipes actually match stone
         for recipe in &recipes {
             assert!(
-                recipe.ingredient.match_item(&pumpkin_data::item::Item::STONE),
+                recipe
+                    .ingredient
+                    .match_item(&pumpkin_data::item::Item::STONE),
                 "Recipe {} should match stone",
                 recipe.recipe_id
             );

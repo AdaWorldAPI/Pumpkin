@@ -109,9 +109,7 @@ impl ClientPacket for CPlayerInfoUpdate<'_> {
                         p.write_var_int(latency)?;
                     }
                     PlayerAction::UpdateDisplayName(display_name) => {
-                        p.write_option(display_name, |p, name| {
-                            p.write_slice(&name.encode())
-                        })?;
+                        p.write_option(display_name, |p, name| p.write_slice(&name.encode()))?;
                     }
                     PlayerAction::UpdateListOrder(priority) => {
                         p.write_var_int(priority)?;

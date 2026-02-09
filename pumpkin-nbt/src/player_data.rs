@@ -76,7 +76,11 @@ pub fn uuid_from_nbt(tag: &NbtTag) -> Option<u128> {
 /// Matches Minecraft's `Pos` tag format: `[x, y, z]`.
 #[must_use]
 pub fn position_to_nbt(x: f64, y: f64, z: f64) -> NbtTag {
-    NbtTag::List(vec![NbtTag::Double(x), NbtTag::Double(y), NbtTag::Double(z)])
+    NbtTag::List(vec![
+        NbtTag::Double(x),
+        NbtTag::Double(y),
+        NbtTag::Double(z),
+    ])
 }
 
 /// Decode a 3D position from an [`NbtTag::List`] of 3 `Double` values.
@@ -443,7 +447,10 @@ mod tests {
             Some(1)
         );
         assert_eq!(compound.get_bool("HasPlayedBefore"), Some(true));
-        assert_eq!(compound.get_string("Dimension"), Some("minecraft:overworld"));
+        assert_eq!(
+            compound.get_string("Dimension"),
+            Some("minecraft:overworld")
+        );
         assert_eq!(compound.get_int("XpTotal"), Some(1000));
         assert_eq!(compound.get_int("foodLevel"), Some(20));
         assert_eq!(compound.get_float("Health"), Some(20.0));

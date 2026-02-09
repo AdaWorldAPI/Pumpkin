@@ -85,8 +85,7 @@ impl Inventory for LecternInventory {
     }
 
     fn mark_dirty(&self) {
-        self.dirty
-            .store(true, std::sync::atomic::Ordering::Relaxed);
+        self.dirty.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 }
 
@@ -185,7 +184,11 @@ impl Slot for LecternBookSlot {
     }
 
     fn take_stack(&self, amount: u8) -> BoxFuture<'_, ItemStack> {
-        Box::pin(async move { self.inventory.remove_stack_specific(self.index, amount).await })
+        Box::pin(async move {
+            self.inventory
+                .remove_stack_specific(self.index, amount)
+                .await
+        })
     }
 }
 
@@ -236,10 +239,7 @@ impl LecternScreenHandler {
 }
 
 impl ScreenHandler for LecternScreenHandler {
-    fn on_closed<'a>(
-        &'a mut self,
-        player: &'a dyn InventoryPlayer,
-    ) -> ScreenHandlerFuture<'a, ()> {
+    fn on_closed<'a>(&'a mut self, player: &'a dyn InventoryPlayer) -> ScreenHandlerFuture<'a, ()> {
         Box::pin(async move {
             self.default_on_closed(player).await;
             // Note: In vanilla, the book stays in the lectern when the screen is closed.

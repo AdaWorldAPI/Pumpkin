@@ -238,21 +238,13 @@ impl ToTokens for LootPoolEntryTypesStruct {
 #[serde(tag = "condition")]
 pub enum LootConditionStruct {
     #[serde(rename = "minecraft:inverted")]
-    Inverted {
-        term: Box<LootConditionStruct>,
-    },
+    Inverted { term: Box<LootConditionStruct> },
     #[serde(rename = "minecraft:any_of")]
-    AnyOf {
-        terms: Vec<LootConditionStruct>,
-    },
+    AnyOf { terms: Vec<LootConditionStruct> },
     #[serde(rename = "minecraft:all_of")]
-    AllOf {
-        terms: Vec<LootConditionStruct>,
-    },
+    AllOf { terms: Vec<LootConditionStruct> },
     #[serde(rename = "minecraft:random_chance")]
-    RandomChance {
-        chance: f32,
-    },
+    RandomChance { chance: f32 },
     #[serde(rename = "minecraft:random_chance_with_enchanted_bonus")]
     RandomChanceWithEnchantedBonus,
     #[serde(rename = "minecraft:entity_properties")]
@@ -267,9 +259,7 @@ pub enum LootConditionStruct {
         properties: BTreeMap<String, String>,
     },
     #[serde(rename = "minecraft:match_tool")]
-    MatchTool {
-        predicate: MatchToolPredicateStruct,
-    },
+    MatchTool { predicate: MatchToolPredicateStruct },
     #[serde(rename = "minecraft:table_bonus")]
     TableBonus,
     #[serde(rename = "minecraft:survives_explosion")]

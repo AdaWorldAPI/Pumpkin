@@ -312,9 +312,7 @@ fn try_firework_star(items: &[ItemStack]) -> Option<ItemStack> {
             gunpowder = true;
         } else if item.item.has_tag(&tag::Item::C_DYES) {
             dye_count += 1;
-        } else if is_firework_shape_modifier(item.item)
-            || is_firework_effect_modifier(item.item)
-        {
+        } else if is_firework_shape_modifier(item.item) || is_firework_effect_modifier(item.item) {
             // Shape modifiers: fire charge (large ball), gold nugget (star), head (creeper),
             //                  feather (burst)
             // Effect modifiers: diamond (trail), glowstone dust (twinkle)
@@ -473,7 +471,7 @@ fn is_firework_shape_modifier(item: &Item) -> bool {
     item == &Item::FIRE_CHARGE      // Large ball
         || item == &Item::GOLD_NUGGET   // Star shape
         || is_mob_head(item)            // Creeper shape
-        || item == &Item::FEATHER       // Burst shape
+        || item == &Item::FEATHER // Burst shape
 }
 
 /// Check if an item is a firework effect modifier.
@@ -506,7 +504,10 @@ mod tests {
         b.set_damage(780);
 
         let result = try_repair_item(&[a, b]);
-        assert!(result.is_some(), "Two same-type damaged items should repair");
+        assert!(
+            result.is_some(),
+            "Two same-type damaged items should repair"
+        );
         let result = result.unwrap();
         assert!(result.item == &Item::DIAMOND_PICKAXE);
         // Each has 781 remaining (1561-780). Combined = 1562. Bonus = 78 (5%).
@@ -543,7 +544,10 @@ mod tests {
         let dye1 = ItemStack::new(1, &Item::RED_DYE);
         let dye2 = ItemStack::new(1, &Item::BLUE_DYE);
         let result = try_armor_dye(&[armor, dye1, dye2]);
-        assert!(result.is_some(), "Leather armor + multiple dyes should match");
+        assert!(
+            result.is_some(),
+            "Leather armor + multiple dyes should match"
+        );
     }
 
     #[test]
@@ -580,7 +584,10 @@ mod tests {
             items.push(ItemStack::new(1, &Item::ARROW));
         }
         items.push(ItemStack::new(1, &Item::LINGERING_POTION));
-        assert!(try_tipped_arrow(&items).is_none(), "7 arrows + potion should not match");
+        assert!(
+            try_tipped_arrow(&items).is_none(),
+            "7 arrows + potion should not match"
+        );
     }
 
     #[test]
@@ -590,7 +597,10 @@ mod tests {
             ItemStack::new(1, &Item::GUNPOWDER),
         ];
         let result = try_firework_rocket(&items);
-        assert!(result.is_some(), "Paper + gunpowder should make firework rocket");
+        assert!(
+            result.is_some(),
+            "Paper + gunpowder should make firework rocket"
+        );
         assert!(result.unwrap().item == &Item::FIREWORK_ROCKET);
     }
 
@@ -613,7 +623,10 @@ mod tests {
             ItemStack::new(1, &Item::RED_DYE),
         ];
         let result = try_firework_star(&items);
-        assert!(result.is_some(), "Gunpowder + dye should make firework star");
+        assert!(
+            result.is_some(),
+            "Gunpowder + dye should make firework star"
+        );
         assert!(result.unwrap().item == &Item::FIREWORK_STAR);
     }
 
@@ -651,7 +664,10 @@ mod tests {
             ItemStack::new(1, &Item::WRITABLE_BOOK),
         ];
         let result = try_book_cloning(&items);
-        assert!(result.is_some(), "Written book + writable book should clone");
+        assert!(
+            result.is_some(),
+            "Written book + writable book should clone"
+        );
         let r = result.unwrap();
         assert!(r.item == &Item::WRITTEN_BOOK);
         assert!(r.item_count == 2, "Should produce 2 copies (original + 1)");

@@ -92,8 +92,7 @@ impl Inventory for AnvilInventory {
     }
 
     fn mark_dirty(&self) {
-        self.dirty
-            .store(true, std::sync::atomic::Ordering::Relaxed);
+        self.dirty.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 }
 
@@ -201,10 +200,7 @@ impl Slot for AnvilOutputSlot {
 /// TODO: Renaming (requires text input packet from client)
 /// TODO: `RepairCost` tracking (component is stub)
 #[must_use]
-pub fn compute_anvil_result(
-    left: &ItemStack,
-    right: &ItemStack,
-) -> Option<(ItemStack, i32)> {
+pub fn compute_anvil_result(left: &ItemStack, right: &ItemStack) -> Option<(ItemStack, i32)> {
     if left.is_empty() {
         return None;
     }
@@ -303,8 +299,7 @@ fn is_repair_material(item: &'static Item, material: &'static Item) -> bool {
         .unwrap_or(item.registry_key);
 
     (material.has_tag(&tag::Item::MINECRAFT_REPAIRS_DIAMOND_ARMOR) && name.starts_with("diamond_"))
-        || (material.has_tag(&tag::Item::MINECRAFT_REPAIRS_IRON_ARMOR)
-            && name.starts_with("iron_"))
+        || (material.has_tag(&tag::Item::MINECRAFT_REPAIRS_IRON_ARMOR) && name.starts_with("iron_"))
         || (material.has_tag(&tag::Item::MINECRAFT_REPAIRS_GOLD_ARMOR)
             && name.starts_with("golden_"))
         || (material.has_tag(&tag::Item::MINECRAFT_REPAIRS_LEATHER_ARMOR)
@@ -337,10 +332,7 @@ pub struct AnvilScreenHandler {
 
 impl AnvilScreenHandler {
     #[allow(clippy::unused_async)]
-    pub async fn new(
-        sync_id: u8,
-        player_inventory: &Arc<PlayerInventory>,
-    ) -> Self {
+    pub async fn new(sync_id: u8, player_inventory: &Arc<PlayerInventory>) -> Self {
         let inventory = Arc::new(AnvilInventory::new());
         let output_slot = Arc::new(AnvilOutputSlot::new());
 
@@ -352,15 +344,9 @@ impl AnvilScreenHandler {
         };
 
         // Slot 0: Left input
-        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(
-            inventory.clone(),
-            0,
-        )));
+        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(inventory.clone(), 0)));
         // Slot 1: Right input
-        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(
-            inventory,
-            1,
-        )));
+        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(inventory, 1)));
         // Slot 2: Output
         handler.add_slot(output_slot);
 
@@ -389,10 +375,7 @@ impl AnvilScreenHandler {
 }
 
 impl ScreenHandler for AnvilScreenHandler {
-    fn on_closed<'a>(
-        &'a mut self,
-        player: &'a dyn InventoryPlayer,
-    ) -> ScreenHandlerFuture<'a, ()> {
+    fn on_closed<'a>(&'a mut self, player: &'a dyn InventoryPlayer) -> ScreenHandlerFuture<'a, ()> {
         Box::pin(async move {
             self.default_on_closed(player).await;
             self.drop_inventory(player, self.inventory.clone()).await;

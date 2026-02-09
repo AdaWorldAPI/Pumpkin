@@ -90,8 +90,7 @@ impl Inventory for EnchantingTableInventory {
     }
 
     fn mark_dirty(&self) {
-        self.dirty
-            .store(true, std::sync::atomic::Ordering::Relaxed);
+        self.dirty.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 }
 
@@ -183,7 +182,11 @@ impl Slot for LapisSlot {
     }
 
     fn take_stack(&self, amount: u8) -> BoxFuture<'_, ItemStack> {
-        Box::pin(async move { self.inventory.remove_stack_specific(self.index, amount).await })
+        Box::pin(async move {
+            self.inventory
+                .remove_stack_specific(self.index, amount)
+                .await
+        })
     }
 }
 
@@ -217,10 +220,7 @@ pub struct EnchantingTableScreenHandler {
 
 impl EnchantingTableScreenHandler {
     #[allow(clippy::unused_async)]
-    pub async fn new(
-        sync_id: u8,
-        player_inventory: &Arc<PlayerInventory>,
-    ) -> Self {
+    pub async fn new(sync_id: u8, player_inventory: &Arc<PlayerInventory>) -> Self {
         let inventory = Arc::new(EnchantingTableInventory::new());
 
         let mut handler = Self {
@@ -233,10 +233,7 @@ impl EnchantingTableScreenHandler {
         };
 
         // Slot 0: Item to enchant
-        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(
-            inventory.clone(),
-            0,
-        )));
+        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(inventory.clone(), 0)));
         // Slot 1: Lapis lazuli
         handler.add_slot(Arc::new(LapisSlot::new(inventory, 1)));
 
@@ -249,10 +246,7 @@ impl EnchantingTableScreenHandler {
 }
 
 impl ScreenHandler for EnchantingTableScreenHandler {
-    fn on_closed<'a>(
-        &'a mut self,
-        player: &'a dyn InventoryPlayer,
-    ) -> ScreenHandlerFuture<'a, ()> {
+    fn on_closed<'a>(&'a mut self, player: &'a dyn InventoryPlayer) -> ScreenHandlerFuture<'a, ()> {
         Box::pin(async move {
             self.default_on_closed(player).await;
             self.drop_inventory(player, self.inventory.clone()).await;

@@ -171,7 +171,10 @@ impl<S: GameDataStore> GameDataStore for CachedStore<S> {
     fn block_by_id(&self, id: u16) -> StoreResult<BlockRecord> {
         // Check cache first (read lock) + XOR verify
         if let Some(entry) = self.blocks_by_id.read().unwrap().get(&id) {
-            debug_assert!(entry.verify_zero_copy(), "XOR zero-copy breach: block_by_id({id})");
+            debug_assert!(
+                entry.verify_zero_copy(),
+                "XOR zero-copy breach: block_by_id({id})"
+            );
             return Ok(entry.value.clone());
         }
         // Miss — delegate, then cache with XOR tag (write lock)
@@ -187,7 +190,10 @@ impl<S: GameDataStore> GameDataStore for CachedStore<S> {
 
     fn block_by_name(&self, name: &str) -> StoreResult<BlockRecord> {
         if let Some(entry) = self.blocks_by_name.read().unwrap().get(name) {
-            debug_assert!(entry.verify_zero_copy(), "XOR zero-copy breach: block_by_name({name})");
+            debug_assert!(
+                entry.verify_zero_copy(),
+                "XOR zero-copy breach: block_by_name({name})"
+            );
             return Ok(entry.value.clone());
         }
         let record = self.delegate.block_by_name(name)?;
@@ -230,7 +236,10 @@ impl<S: GameDataStore> GameDataStore for CachedStore<S> {
 
     fn item_by_name(&self, name: &str) -> StoreResult<ItemRecord> {
         if let Some(entry) = self.items_by_name.read().unwrap().get(name) {
-            debug_assert!(entry.verify_zero_copy(), "XOR zero-copy breach: item_by_name({name})");
+            debug_assert!(
+                entry.verify_zero_copy(),
+                "XOR zero-copy breach: item_by_name({name})"
+            );
             return Ok(entry.value.clone());
         }
         let record = self.delegate.item_by_name(name)?;
@@ -440,8 +449,7 @@ mod tests {
 
     #[test]
     fn cached_as_trait_object() {
-        let cached: Box<dyn GameDataStore> =
-            Box::new(CachedStore::new(StaticStore::new()));
+        let cached: Box<dyn GameDataStore> = Box::new(CachedStore::new(StaticStore::new()));
         let block = cached.block_by_name("stone").unwrap();
         assert_eq!(block.name, "stone");
     }

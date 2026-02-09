@@ -104,17 +104,7 @@ impl StructurePieceBase for AncientCityPiece {
                 deepslate_bricks,
             );
             // Hollow interior
-            p.fill(
-                chunk,
-                &box_limit,
-                cx + 1,
-                1,
-                cz + 1,
-                cx + 1,
-                9,
-                cz + 1,
-                air,
-            );
+            p.fill(chunk, &box_limit, cx + 1, 1, cz + 1, cx + 1, 9, cz + 1, air);
             // Soul lantern on top
             p.add_block(chunk, soul_lantern, cx + 1, 10, cz + 1, &box_limit);
         }

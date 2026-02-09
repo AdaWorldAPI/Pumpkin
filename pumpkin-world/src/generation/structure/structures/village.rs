@@ -194,14 +194,7 @@ impl StructurePieceBase for VillagePiece {
         // Door
         p.fill(chunk, &box_limit, 4, 1, 4, 4, 2, 4, air);
         // Window
-        p.add_block(
-            chunk,
-            Block::GLASS_PANE.default_state,
-            0,
-            2,
-            4,
-            &box_limit,
-        );
+        p.add_block(chunk, Block::GLASS_PANE.default_state, 0, 2, 4, &box_limit);
         // Corner logs
         p.fill(chunk, &box_limit, 0, 1, 2, 0, 4, 2, log);
         p.fill(chunk, &box_limit, 4, 1, 2, 4, 4, 2, log);
@@ -232,14 +225,7 @@ impl StructurePieceBase for VillagePiece {
         // Door
         p.fill(chunk, &box_limit, 11, 1, 4, 11, 2, 4, air);
         // Window
-        p.add_block(
-            chunk,
-            Block::GLASS_PANE.default_state,
-            15,
-            2,
-            4,
-            &box_limit,
-        );
+        p.add_block(chunk, Block::GLASS_PANE.default_state, 15, 2, 4, &box_limit);
         // Corner logs
         p.fill(chunk, &box_limit, 11, 1, 2, 11, 4, 2, log);
         p.fill(chunk, &box_limit, 15, 1, 2, 15, 4, 2, log);
@@ -248,46 +234,28 @@ impl StructurePieceBase for VillagePiece {
         // Roof
         p.fill(chunk, &box_limit, 11, 4, 2, 15, 4, 6, roof_block);
         // Furnace
-        p.add_block(
-            chunk,
-            Block::FURNACE.default_state,
-            14,
-            1,
-            3,
-            &box_limit,
-        );
+        p.add_block(chunk, Block::FURNACE.default_state, 14, 1, 3, &box_limit);
 
         // === Farm (south end) ===
-        p.fill(chunk, &box_limit, 2, 0, 11, 5, 0, 14, Block::FARMLAND.default_state);
-        p.add_block(
+        p.fill(
             chunk,
-            Block::COMPOSTER.default_state,
-            1,
-            1,
-            12,
             &box_limit,
+            2,
+            0,
+            11,
+            5,
+            0,
+            14,
+            Block::FARMLAND.default_state,
         );
+        p.add_block(chunk, Block::COMPOSTER.default_state, 1, 1, 12, &box_limit);
 
         // === Bell (center of village) ===
-        p.add_block(
-            chunk,
-            Block::BELL.default_state,
-            7,
-            1,
-            5,
-            &box_limit,
-        );
+        p.add_block(chunk, Block::BELL.default_state, 7, 1, 5, &box_limit);
 
         // === Lamp post ===
         p.fill(chunk, &box_limit, 7, 1, 1, 7, 3, 1, log);
-        p.add_block(
-            chunk,
-            Block::LANTERN.default_state,
-            7,
-            4,
-            1,
-            &box_limit,
-        );
+        p.add_block(chunk, Block::LANTERN.default_state, 7, 4, 1, &box_limit);
 
         // Fill downward from structure corners
         for &x in &[0, 4, 11, 15] {

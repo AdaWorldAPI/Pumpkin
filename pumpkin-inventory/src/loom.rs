@@ -93,8 +93,7 @@ impl Inventory for LoomInventory {
     }
 
     fn mark_dirty(&self) {
-        self.dirty
-            .store(true, std::sync::atomic::Ordering::Relaxed);
+        self.dirty.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 }
 
@@ -257,10 +256,7 @@ pub struct LoomScreenHandler {
 
 impl LoomScreenHandler {
     #[allow(clippy::unused_async)]
-    pub async fn new(
-        sync_id: u8,
-        player_inventory: &Arc<PlayerInventory>,
-    ) -> Self {
+    pub async fn new(sync_id: u8, player_inventory: &Arc<PlayerInventory>) -> Self {
         let inventory = Arc::new(LoomInventory::new());
         let output_slot = Arc::new(LoomOutputSlot::new());
 
@@ -272,20 +268,11 @@ impl LoomScreenHandler {
         };
 
         // Slot 0: Banner input
-        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(
-            inventory.clone(),
-            0,
-        )));
+        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(inventory.clone(), 0)));
         // Slot 1: Dye input
-        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(
-            inventory.clone(),
-            1,
-        )));
+        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(inventory.clone(), 1)));
         // Slot 2: Pattern item
-        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(
-            inventory,
-            2,
-        )));
+        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(inventory, 2)));
         // Slot 3: Output
         handler.add_slot(output_slot);
 
@@ -316,10 +303,7 @@ impl LoomScreenHandler {
 }
 
 impl ScreenHandler for LoomScreenHandler {
-    fn on_closed<'a>(
-        &'a mut self,
-        player: &'a dyn InventoryPlayer,
-    ) -> ScreenHandlerFuture<'a, ()> {
+    fn on_closed<'a>(&'a mut self, player: &'a dyn InventoryPlayer) -> ScreenHandlerFuture<'a, ()> {
         Box::pin(async move {
             self.default_on_closed(player).await;
             self.drop_inventory(player, self.inventory.clone()).await;

@@ -78,16 +78,8 @@ impl ClientPacket for CPlayerPosition {
 impl ServerPacket for CPlayerPosition {
     fn read(mut read: impl std::io::Read) -> Result<Self, crate::ser::ReadingError> {
         let teleport_id = read.get_var_int()?;
-        let position = Vector3::new(
-            read.get_f64_be()?,
-            read.get_f64_be()?,
-            read.get_f64_be()?,
-        );
-        let delta = Vector3::new(
-            read.get_f64_be()?,
-            read.get_f64_be()?,
-            read.get_f64_be()?,
-        );
+        let position = Vector3::new(read.get_f64_be()?, read.get_f64_be()?, read.get_f64_be()?);
+        let delta = Vector3::new(read.get_f64_be()?, read.get_f64_be()?, read.get_f64_be()?);
         let yaw = read.get_f32_be()?;
         let pitch = read.get_f32_be()?;
         let relatives = PositionFlag::from_bitfield(read.get_i32_be()?);

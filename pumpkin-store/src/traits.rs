@@ -508,7 +508,10 @@ mod tests {
         let b = MobGoalState::new(1, 3, 0xF, 0xF, 0, 0);
         // Only the LOOK slot changed (2→3), bits 4-7 differ
         let dist = a.hamming_distance(b);
-        assert!(dist > 0, "different states must have nonzero hamming distance");
+        assert!(
+            dist > 0,
+            "different states must have nonzero hamming distance"
+        );
         assert!(dist <= 4, "single slot change should differ by ≤4 bits");
     }
 
@@ -571,12 +574,19 @@ mod tests {
         a.bind(10, 20, 30);
         b.bind(10, 20, 30);
         let diff = a.xor_diff(&b);
-        assert_eq!(diff.popcount(), 0, "identical binds should produce zero diff");
+        assert_eq!(
+            diff.popcount(),
+            0,
+            "identical binds should produce zero diff"
+        );
 
         // Bind extra position in b — diff shows it
         b.bind(40, 50, 60);
         let diff = a.xor_diff(&b);
-        assert!(diff.popcount() > 0, "different binds should produce nonzero diff");
+        assert!(
+            diff.popcount() > 0,
+            "different binds should produce nonzero diff"
+        );
     }
 
     #[test]

@@ -89,8 +89,7 @@ impl Inventory for CartographyTableInventory {
     }
 
     fn mark_dirty(&self) {
-        self.dirty
-            .store(true, std::sync::atomic::Ordering::Relaxed);
+        self.dirty.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 }
 
@@ -237,32 +236,20 @@ pub struct CartographyTableScreenHandler {
 
 impl CartographyTableScreenHandler {
     #[allow(clippy::unused_async)]
-    pub async fn new(
-        sync_id: u8,
-        player_inventory: &Arc<PlayerInventory>,
-    ) -> Self {
+    pub async fn new(sync_id: u8, player_inventory: &Arc<PlayerInventory>) -> Self {
         let inventory = Arc::new(CartographyTableInventory::new());
         let output_slot = Arc::new(CartographyOutputSlot::new());
 
         let mut handler = Self {
-            behaviour: ScreenHandlerBehaviour::new(
-                sync_id,
-                Some(WindowType::CartographyTable),
-            ),
+            behaviour: ScreenHandlerBehaviour::new(sync_id, Some(WindowType::CartographyTable)),
             inventory: inventory.clone(),
             output_slot: output_slot.clone(),
         };
 
         // Slot 0: Map input
-        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(
-            inventory.clone(),
-            0,
-        )));
+        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(inventory.clone(), 0)));
         // Slot 1: Additional input
-        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(
-            inventory,
-            1,
-        )));
+        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(inventory, 1)));
         // Slot 2: Output
         handler.add_slot(output_slot);
 
@@ -289,10 +276,7 @@ impl CartographyTableScreenHandler {
 }
 
 impl ScreenHandler for CartographyTableScreenHandler {
-    fn on_closed<'a>(
-        &'a mut self,
-        player: &'a dyn InventoryPlayer,
-    ) -> ScreenHandlerFuture<'a, ()> {
+    fn on_closed<'a>(&'a mut self, player: &'a dyn InventoryPlayer) -> ScreenHandlerFuture<'a, ()> {
         Box::pin(async move {
             self.default_on_closed(player).await;
             self.drop_inventory(player, self.inventory.clone()).await;

@@ -63,7 +63,9 @@ pub use error::{StoreError, StoreResult};
 
 // ── Core API (community path) ─────────────────────────────────────────
 // These types are used by all tiers including Static (community default).
-pub use traits::{BlockRecord, EntityRecord, GameDataStore, GameMappingRecord, ItemRecord, RecipeRecord};
+pub use traits::{
+    BlockRecord, EntityRecord, GameDataStore, GameMappingRecord, ItemRecord, RecipeRecord,
+};
 
 // ── Extended API (Cached/Lance tiers) ──────────────────────────────────
 // Spatial overlays, XOR guards, and goal state encoding. Always compiled
@@ -71,7 +73,7 @@ pub use traits::{BlockRecord, EntityRecord, GameDataStore, GameMappingRecord, It
 // Community default path never touches these.
 pub mod overlay {
     pub use crate::traits::{
-        MobGoalState, SpatialOverlay, ZeroCopyGuard, OVERLAY_BITS, OVERLAY_WORDS, XOR_SENTINEL,
+        MobGoalState, OVERLAY_BITS, OVERLAY_WORDS, SpatialOverlay, XOR_SENTINEL, ZeroCopyGuard,
     };
 }
 
@@ -211,7 +213,10 @@ mod tests {
         // without conflicting with existing block/item/entity lookups.
         let store = StoreProvider::Static.open();
         let mappings = store.game_mappings("biome", "plains").unwrap();
-        assert!(mappings.is_empty(), "Static tier returns empty game_mappings");
+        assert!(
+            mappings.is_empty(),
+            "Static tier returns empty game_mappings"
+        );
 
         let count = store.game_mapping_count();
         assert_eq!(count, 0);

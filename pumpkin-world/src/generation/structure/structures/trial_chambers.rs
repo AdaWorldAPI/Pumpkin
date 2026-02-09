@@ -101,7 +101,7 @@ impl StructurePieceBase for TrialChambersPiece {
 
         // Mid-pillars
         for &(px, pz) in &[(9, 4), (9, 15), (4, 9), (15, 9)] {
-            p.fill(chunk, &box_limit, px, 1, pz, px+1, 8, pz, tuff_bricks);
+            p.fill(chunk, &box_limit, px, 1, pz, px + 1, 8, pz, tuff_bricks);
         }
 
         // Trial spawners
@@ -123,22 +123,8 @@ impl StructurePieceBase for TrialChambersPiece {
         p.fill(chunk, &box_limit, 8, 0, 19, 11, 0, 19, polished_tuff);
 
         // Reward vault (center back)
-        p.add_block(
-            chunk,
-            Block::VAULT.default_state,
-            9,
-            1,
-            16,
-            &box_limit,
-        );
-        p.add_block(
-            chunk,
-            Block::VAULT.default_state,
-            10,
-            1,
-            16,
-            &box_limit,
-        );
+        p.add_block(chunk, Block::VAULT.default_state, 9, 1, 16, &box_limit);
+        p.add_block(chunk, Block::VAULT.default_state, 10, 1, 16, &box_limit);
 
         // Decorative tuff brick arches at midpoints
         p.fill(chunk, &box_limit, 9, 6, 1, 10, 8, 1, tuff_bricks);
@@ -148,14 +134,7 @@ impl StructurePieceBase for TrialChambersPiece {
 
         // Lanterns for lighting
         for &(lx, lz) in &[(4, 4), (4, 15), (15, 4), (15, 15)] {
-            p.add_block(
-                chunk,
-                Block::LANTERN.default_state,
-                lx,
-                5,
-                lz,
-                &box_limit,
-            );
+            p.add_block(chunk, Block::LANTERN.default_state, lx, 5, lz, &box_limit);
         }
     }
 

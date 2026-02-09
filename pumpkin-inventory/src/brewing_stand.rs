@@ -88,8 +88,7 @@ impl Inventory for BrewingStandInventory {
     }
 
     fn mark_dirty(&self) {
-        self.dirty
-            .store(true, std::sync::atomic::Ordering::Relaxed);
+        self.dirty.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 }
 
@@ -191,7 +190,11 @@ impl Slot for PotionSlot {
     }
 
     fn take_stack(&self, amount: u8) -> BoxFuture<'_, ItemStack> {
-        Box::pin(async move { self.inventory.remove_stack_specific(self.index, amount).await })
+        Box::pin(async move {
+            self.inventory
+                .remove_stack_specific(self.index, amount)
+                .await
+        })
     }
 }
 
@@ -273,7 +276,11 @@ impl Slot for FuelSlot {
     }
 
     fn take_stack(&self, amount: u8) -> BoxFuture<'_, ItemStack> {
-        Box::pin(async move { self.inventory.remove_stack_specific(self.index, amount).await })
+        Box::pin(async move {
+            self.inventory
+                .remove_stack_specific(self.index, amount)
+                .await
+        })
     }
 }
 
@@ -303,10 +310,7 @@ pub struct BrewingStandScreenHandler {
 
 impl BrewingStandScreenHandler {
     #[allow(clippy::unused_async)]
-    pub async fn new(
-        sync_id: u8,
-        player_inventory: &Arc<PlayerInventory>,
-    ) -> Self {
+    pub async fn new(sync_id: u8, player_inventory: &Arc<PlayerInventory>) -> Self {
         let inventory = Arc::new(BrewingStandInventory::new());
 
         let mut handler = Self {
@@ -321,10 +325,7 @@ impl BrewingStandScreenHandler {
             handler.add_slot(Arc::new(PotionSlot::new(inventory.clone(), i)));
         }
         // Slot 3: Ingredient
-        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(
-            inventory.clone(),
-            3,
-        )));
+        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(inventory.clone(), 3)));
         // Slot 4: Fuel (blaze powder)
         handler.add_slot(Arc::new(FuelSlot::new(inventory, 4)));
 
@@ -337,10 +338,7 @@ impl BrewingStandScreenHandler {
 }
 
 impl ScreenHandler for BrewingStandScreenHandler {
-    fn on_closed<'a>(
-        &'a mut self,
-        player: &'a dyn InventoryPlayer,
-    ) -> ScreenHandlerFuture<'a, ()> {
+    fn on_closed<'a>(&'a mut self, player: &'a dyn InventoryPlayer) -> ScreenHandlerFuture<'a, ()> {
         Box::pin(async move {
             self.default_on_closed(player).await;
             // Drop non-result items back to player

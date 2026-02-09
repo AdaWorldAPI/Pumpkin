@@ -90,8 +90,7 @@ impl Inventory for GrindstoneInventory {
     }
 
     fn mark_dirty(&self) {
-        self.dirty
-            .store(true, std::sync::atomic::Ordering::Relaxed);
+        self.dirty.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 }
 
@@ -193,10 +192,7 @@ impl Slot for GrindstoneOutputSlot {
 /// 2. Two same-type items → combined durability, enchantments removed (curses kept)
 /// 3. Returns XP proportional to removed enchantment levels (not computed here)
 #[must_use]
-pub fn compute_grindstone_result(
-    top: &ItemStack,
-    bottom: &ItemStack,
-) -> Option<ItemStack> {
+pub fn compute_grindstone_result(top: &ItemStack, bottom: &ItemStack) -> Option<ItemStack> {
     if top.is_empty() && bottom.is_empty() {
         return None;
     }
@@ -239,7 +235,9 @@ fn strip_enchantments(stack: &ItemStack) -> Option<ItemStack> {
     let mut result = stack.clone();
 
     // Remove the enchantments component entirely
-    result.patch.retain(|(id, _)| *id != DataComponent::Enchantments);
+    result
+        .patch
+        .retain(|(id, _)| *id != DataComponent::Enchantments);
 
     // Re-add only curses if present
     if let Some(enchants) = stack.get_data_component::<EnchantmentsImpl>() {
@@ -308,10 +306,7 @@ pub struct GrindstoneScreenHandler {
 
 impl GrindstoneScreenHandler {
     #[allow(clippy::unused_async)]
-    pub async fn new(
-        sync_id: u8,
-        player_inventory: &Arc<PlayerInventory>,
-    ) -> Self {
+    pub async fn new(sync_id: u8, player_inventory: &Arc<PlayerInventory>) -> Self {
         let inventory = Arc::new(GrindstoneInventory::new());
         let output_slot = Arc::new(GrindstoneOutputSlot::new());
 
@@ -322,15 +317,9 @@ impl GrindstoneScreenHandler {
         };
 
         // Slot 0: Top input
-        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(
-            inventory.clone(),
-            0,
-        )));
+        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(inventory.clone(), 0)));
         // Slot 1: Bottom input
-        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(
-            inventory,
-            1,
-        )));
+        handler.add_slot(Arc::new(crate::slot::NormalSlot::new(inventory, 1)));
         // Slot 2: Output
         handler.add_slot(output_slot);
 
@@ -357,10 +346,7 @@ impl GrindstoneScreenHandler {
 }
 
 impl ScreenHandler for GrindstoneScreenHandler {
-    fn on_closed<'a>(
-        &'a mut self,
-        player: &'a dyn InventoryPlayer,
-    ) -> ScreenHandlerFuture<'a, ()> {
+    fn on_closed<'a>(&'a mut self, player: &'a dyn InventoryPlayer) -> ScreenHandlerFuture<'a, ()> {
         Box::pin(async move {
             self.default_on_closed(player).await;
             self.drop_inventory(player, self.inventory.clone()).await;

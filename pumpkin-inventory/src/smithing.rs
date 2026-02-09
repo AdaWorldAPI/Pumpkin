@@ -2,8 +2,7 @@ use std::{any::Any, pin::Pin, sync::Arc};
 
 use pumpkin_data::item::Item;
 use pumpkin_data::recipes::{
-    SmithingTransformRecipe, SmithingTrimRecipe, RECIPES_SMITHING_TRANSFORM,
-    RECIPES_SMITHING_TRIM,
+    RECIPES_SMITHING_TRANSFORM, RECIPES_SMITHING_TRIM, SmithingTransformRecipe, SmithingTrimRecipe,
 };
 use pumpkin_data::screen::WindowType;
 use pumpkin_world::{
@@ -336,10 +335,7 @@ impl SmithingScreenHandler {
 }
 
 impl ScreenHandler for SmithingScreenHandler {
-    fn on_closed<'a>(
-        &'a mut self,
-        player: &'a dyn InventoryPlayer,
-    ) -> ScreenHandlerFuture<'a, ()> {
+    fn on_closed<'a>(&'a mut self, player: &'a dyn InventoryPlayer) -> ScreenHandlerFuture<'a, ()> {
         Box::pin(async move {
             self.default_on_closed(player).await;
             self.drop_inventory(player, self.input_inventory.clone())
@@ -610,7 +606,10 @@ mod tests {
             &pumpkin_data::item::Item::DIRT,
             &pumpkin_data::item::Item::DIRT,
         );
-        assert!(result.is_none(), "Dirt x3 should not match any smithing recipe");
+        assert!(
+            result.is_none(),
+            "Dirt x3 should not match any smithing recipe"
+        );
     }
 
     #[test]

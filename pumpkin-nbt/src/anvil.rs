@@ -953,10 +953,7 @@ mod tests {
         assert_eq!(reparsed.chunk_count(), 1024);
 
         assert_eq!(reparsed.read_chunk(0, 0).unwrap().unwrap(), b"(0,0)");
-        assert_eq!(
-            reparsed.read_chunk(31, 31).unwrap().unwrap(),
-            b"(31,31)"
-        );
+        assert_eq!(reparsed.read_chunk(31, 31).unwrap().unwrap(), b"(31,31)");
     }
 
     #[test]

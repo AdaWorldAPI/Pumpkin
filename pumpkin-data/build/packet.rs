@@ -27,10 +27,9 @@ pub(crate) fn build() -> TokenStream {
     .unwrap();
 
     // 1.18.2 is optional — if the file doesn't exist yet, all IDs default to -1 (suppressed)
-    let packets_18: Option<Packets> =
-        fs::read_to_string("../assets/packet/1_18_2_packets.json")
-            .ok()
-            .and_then(|s| serde_json::from_str(&s).ok());
+    let packets_18: Option<Packets> = fs::read_to_string("../assets/packet/1_18_2_packets.json")
+        .ok()
+        .and_then(|s| serde_json::from_str(&s).ok());
 
     let latest_version = packets_11.version;
 

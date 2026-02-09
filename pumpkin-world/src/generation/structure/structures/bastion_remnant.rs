@@ -89,10 +89,50 @@ impl StructurePieceBase for BastionRemnantPiece {
         p.fill(chunk, &box_limit, 1, 1, 1, 18, 10, 18, air);
 
         // Inner walls (polished blackstone bricks)
-        p.fill(chunk, &box_limit, 2, 1, 2, 2, 7, 17, polished_blackstone_bricks);
-        p.fill(chunk, &box_limit, 17, 1, 2, 17, 7, 17, polished_blackstone_bricks);
-        p.fill(chunk, &box_limit, 3, 1, 2, 16, 7, 2, polished_blackstone_bricks);
-        p.fill(chunk, &box_limit, 3, 1, 17, 16, 7, 17, polished_blackstone_bricks);
+        p.fill(
+            chunk,
+            &box_limit,
+            2,
+            1,
+            2,
+            2,
+            7,
+            17,
+            polished_blackstone_bricks,
+        );
+        p.fill(
+            chunk,
+            &box_limit,
+            17,
+            1,
+            2,
+            17,
+            7,
+            17,
+            polished_blackstone_bricks,
+        );
+        p.fill(
+            chunk,
+            &box_limit,
+            3,
+            1,
+            2,
+            16,
+            7,
+            2,
+            polished_blackstone_bricks,
+        );
+        p.fill(
+            chunk,
+            &box_limit,
+            3,
+            1,
+            17,
+            16,
+            7,
+            17,
+            polished_blackstone_bricks,
+        );
 
         // Inner room air
         p.fill(chunk, &box_limit, 3, 1, 3, 16, 7, 16, air);
@@ -107,7 +147,17 @@ impl StructurePieceBase for BastionRemnantPiece {
 
         // Corner towers
         for &(cx, cz) in &[(1, 1), (1, 18), (18, 1), (18, 18)] {
-            p.fill(chunk, &box_limit, cx, 1, cz, cx, 12, cz, polished_blackstone_bricks);
+            p.fill(
+                chunk,
+                &box_limit,
+                cx,
+                1,
+                cz,
+                cx,
+                12,
+                cz,
+                polished_blackstone_bricks,
+            );
         }
 
         // Basalt pillars
@@ -116,7 +166,17 @@ impl StructurePieceBase for BastionRemnantPiece {
         }
 
         // Treasure bridge (center, elevated)
-        p.fill(chunk, &box_limit, 7, 4, 7, 12, 4, 12, polished_blackstone_bricks);
+        p.fill(
+            chunk,
+            &box_limit,
+            7,
+            4,
+            7,
+            12,
+            4,
+            12,
+            polished_blackstone_bricks,
+        );
         // Gold treasure
         p.fill(chunk, &box_limit, 8, 5, 8, 11, 5, 11, gold_block);
 

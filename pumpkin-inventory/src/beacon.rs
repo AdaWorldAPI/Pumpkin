@@ -88,8 +88,7 @@ impl Inventory for BeaconInventory {
     }
 
     fn mark_dirty(&self) {
-        self.dirty
-            .store(true, std::sync::atomic::Ordering::Relaxed);
+        self.dirty.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 }
 
@@ -189,7 +188,11 @@ impl Slot for BeaconPaymentSlot {
     }
 
     fn take_stack(&self, amount: u8) -> BoxFuture<'_, ItemStack> {
-        Box::pin(async move { self.inventory.remove_stack_specific(self.index, amount).await })
+        Box::pin(async move {
+            self.inventory
+                .remove_stack_specific(self.index, amount)
+                .await
+        })
     }
 }
 
@@ -243,10 +246,7 @@ impl BeaconScreenHandler {
 }
 
 impl ScreenHandler for BeaconScreenHandler {
-    fn on_closed<'a>(
-        &'a mut self,
-        player: &'a dyn InventoryPlayer,
-    ) -> ScreenHandlerFuture<'a, ()> {
+    fn on_closed<'a>(&'a mut self, player: &'a dyn InventoryPlayer) -> ScreenHandlerFuture<'a, ()> {
         Box::pin(async move {
             self.default_on_closed(player).await;
             // Drop payment item back to player

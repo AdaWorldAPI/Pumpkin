@@ -199,14 +199,7 @@ impl StructurePieceBase for WoodlandMansionPiece {
         p.fill(chunk, &box_limit, 3, 1, 3, 8, 1, 17, birch_planks);
 
         // Chest
-        p.add_block(
-            chunk,
-            Block::CHEST.default_state,
-            15,
-            1,
-            15,
-            &box_limit,
-        );
+        p.add_block(chunk, Block::CHEST.default_state, 15, 1, 15, &box_limit);
 
         // Fill downward from corners
         for &x in &[0, 20] {
