@@ -1,7 +1,10 @@
 use std::pin::Pin;
 use std::sync::atomic::Ordering::Relaxed;
 use std::sync::{Arc, Weak};
-use std::{collections::HashMap, sync::atomic::Ordering};
+use std::{
+    collections::HashMap,
+    sync::{OnceLock, atomic::Ordering},
+};
 
 pub mod chunker;
 pub mod explosion;
@@ -213,7 +216,95 @@ impl PartialEq for World {
 
 impl Eq for World {}
 
+#[derive(Clone, Copy)]
+struct VicinityTickConfig {
+    enabled: bool,
+    near_distance_sq: f64,
+    mid_distance_sq: f64,
+    mid_interval: i32,
+    far_interval: i32,
+}
+
+fn parse_bool_env(var: &str, fallback: bool) -> bool {
+    std::env::var(var).ok().map_or(fallback, |value| {
+        value == "1" || value.eq_ignore_ascii_case("true") || value.eq_ignore_ascii_case("yes")
+    })
+}
+
+fn parse_positive_f64_env(var: &str, fallback: f64) -> f64 {
+    std::env::var(var)
+        .ok()
+        .and_then(|value| value.parse::<f64>().ok())
+        .filter(|value| *value > 0.0)
+        .unwrap_or(fallback)
+}
+
+fn parse_positive_i32_env(var: &str, fallback: i32) -> i32 {
+    std::env::var(var)
+        .ok()
+        .and_then(|value| value.parse::<i32>().ok())
+        .filter(|value| *value > 0)
+        .unwrap_or(fallback)
+}
+
+fn load_vicinity_tick_config() -> VicinityTickConfig {
+    static CONFIG: OnceLock<VicinityTickConfig> = OnceLock::new();
+    *CONFIG.get_or_init(|| {
+        let near_distance = parse_positive_f64_env("PUMPKIN_ENTITY_NEAR_BLOCKS", 64.0);
+        let mid_distance =
+            parse_positive_f64_env("PUMPKIN_ENTITY_MID_BLOCKS", 128.0).max(near_distance);
+
+        VicinityTickConfig {
+            enabled: parse_bool_env("PUMPKIN_ENTITY_VICINITY_TICK", false),
+            near_distance_sq: near_distance * near_distance,
+            mid_distance_sq: mid_distance * mid_distance,
+            mid_interval: parse_positive_i32_env("PUMPKIN_ENTITY_MID_INTERVAL", 2),
+            far_interval: parse_positive_i32_env("PUMPKIN_ENTITY_FAR_INTERVAL", 8),
+        }
+    })
+}
+
 impl World {
+    fn interval_due(tick_count: i32, entity_id: i32, interval: i32) -> bool {
+        let interval = i64::from(interval.max(1));
+        (i64::from(tick_count) + i64::from(entity_id)).rem_euclid(interval) == 0
+    }
+
+    fn should_tick_entity_vicinity(
+        players: &[Arc<Player>],
+        entity: &Arc<dyn EntityBase>,
+        tick_count: i32,
+    ) -> bool {
+        let config = load_vicinity_tick_config();
+        if !config.enabled {
+            return true;
+        }
+
+        let entity_id = entity.get_entity().entity_id;
+        if players.is_empty() {
+            return Self::interval_due(tick_count, entity_id, config.far_interval);
+        }
+
+        let entity_pos = entity.get_entity().pos.load();
+        let mut nearest_distance_sq = f64::INFINITY;
+        for player in players {
+            let player_pos = player.living_entity.entity.pos.load();
+            let distance_sq = entity_pos.squared_distance_to_vec(&player_pos);
+            if distance_sq < nearest_distance_sq {
+                nearest_distance_sq = distance_sq;
+                if nearest_distance_sq <= config.near_distance_sq {
+                    return true;
+                }
+            }
+        }
+
+        if nearest_distance_sq <= config.mid_distance_sq {
+            return Self::interval_due(tick_count, entity_id, config.mid_interval);
+        }
+
+        Self::interval_due(tick_count, entity_id, config.far_interval)
+    }
+
     #[must_use]
     pub fn load(
         level: Arc<Level>,
@@ -626,10 +717,13 @@ impl World {
         let entity_start = tokio::time::Instant::now();
         let entities_to_tick = self.entities.load();
         let entity_count = entities_to_tick.len();
+        let tick_count = server.tick_count.load(Relaxed);
 
         for entity in entities_to_tick.iter() {
             entity.get_entity().age.fetch_add(1, Relaxed);
-            entity.tick(entity.clone(), server).await;
+            if Self::should_tick_entity_vicinity(players.as_slice(), entity, tick_count) {
+                entity.tick(entity.clone(), server).await;
+            }
 
             for player in players.iter() {
                 if player
