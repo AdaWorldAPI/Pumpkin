@@ -231,7 +231,6 @@ impl<T: Mob + Send + 'static> EntityBase for T {
     ) -> EntityBaseFuture<'a, ()> {
         Box::pin(async move {
             let mob_entity = self.get_mob_entity();
-            mob_entity.living_entity.tick(caller, server).await;
 
             let age = mob_entity.living_entity.entity.age.load(Relaxed);
             if (age + mob_entity.living_entity.entity.entity_id) % 2 != 0 && age > 1 {
@@ -259,6 +258,9 @@ impl<T: Mob + Send + 'static> EntityBase for T {
             let mut look_control = mob_entity.look_control.lock().await;
             look_control.tick(self).await;
             drop(look_control);
+
+            // Physics tick runs after AI updates movement intent.
+            mob_entity.living_entity.tick(caller, server).await;
         })
     }
 
