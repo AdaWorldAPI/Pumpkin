@@ -401,8 +401,8 @@ pub struct Entity {
 /// Pure, synchronous collision math extracted from `adjust_movement_for_collisions`.
 /// Returns (adjusted_movement, supporting_block_pos, horizontal_collision)
 pub fn compute_collision_math(
-    mut movement: Vector3<f64>,
-    mut bounding_box: BoundingBox,
+    movement: Vector3<f64>,
+    bounding_box: BoundingBox,
     collisions: Vec<BoundingBox>,
     block_positions: Vec<(usize, BlockPos)>,
 ) -> (Vector3<f64>, Option<BlockPos>, bool) {
