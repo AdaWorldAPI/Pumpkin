@@ -2051,6 +2051,22 @@ impl GenerationSchedule {
                             StagedChunkEnum::None,
                         ));
                         let write_radius = node.stage.get_write_radius();
+                        let mut missing_dependency_chunk = false;
+                        'check_chunks: for dx in -write_radius..=write_radius {
+                            for dy in -write_radius..=write_radius {
+                                let new_pos = node.pos.add_raw(dx, dy);
+                                let holder = self.chunk_map.get(&new_pos).unwrap();
+                                if holder.chunk.is_none() {
+                                    missing_dependency_chunk = true;
+                                    break 'check_chunks;
+                                }
+                            }
+                        }
+                        if missing_dependency_chunk {
+                            self.graph.nodes.remove(occupy);
+                            self.queue.push(task);
+                            break 'out2;
+                        }
                         let mut cache = Cache::new(
                             node.pos.x - write_radius,
                             node.pos.y - write_radius,
@@ -2084,10 +2100,7 @@ impl GenerationSchedule {
                                         cache.chunks.push(Chunk::Level(chunk.clone()));
                                         holder.chunk = Some(Chunk::Level(chunk));
                                     }
-                                    Proto(chunk) => {
-                                        cache.chunks.push(Proto(chunk.clone()));
-                                        holder.chunk = Some(Proto(chunk));
-                                    }
+                                    Proto(chunk) => cache.chunks.push(Proto(chunk)),
                                 }
 
                                 debug_assert!(holder.occupied.is_null());
