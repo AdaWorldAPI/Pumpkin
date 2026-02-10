@@ -1,7 +1,10 @@
 use std::pin::Pin;
 use std::sync::atomic::Ordering::Relaxed;
 use std::sync::{Arc, Weak};
-use std::{collections::HashMap, sync::atomic::Ordering};
+use std::{
+    collections::HashMap,
+    sync::{Mutex as StdMutex, OnceLock, atomic::Ordering},
+};
 
 pub mod chunker;
 pub mod explosion;
@@ -147,6 +150,50 @@ use weather::Weather;
 
 type FlowingFluidProperties = pumpkin_data::fluid::FlowingWaterLikeFluidProperties;
 
+const XOR_OVERLAY_WORDS: usize = 256;
+const XOR_OVERLAY_BITS: usize = XOR_OVERLAY_WORDS * 64;
+const XOR_OVERLAY_LOG_INTERVAL_TICKS: u64 = 400;
+
+fn xor_overlay_experiment_enabled() -> bool {
+    static ENABLED: OnceLock<bool> = OnceLock::new();
+    *ENABLED.get_or_init(|| {
+        std::env::var("PUMPKIN_XOR_OVERLAY_TEST").is_ok_and(|value| {
+            value == "1"
+                || value.eq_ignore_ascii_case("true")
+                || value.eq_ignore_ascii_case("yes")
+        })
+    })
+}
+
+fn xor_overlay_log_interval_ticks() -> u64 {
+    static INTERVAL: OnceLock<u64> = OnceLock::new();
+    *INTERVAL.get_or_init(|| {
+        std::env::var("PUMPKIN_XOR_OVERLAY_LOG_TICKS")
+            .ok()
+            .and_then(|value| value.parse::<u64>().ok())
+            .filter(|ticks| *ticks > 0)
+            .unwrap_or(XOR_OVERLAY_LOG_INTERVAL_TICKS)
+    })
+}
+
+struct XorOverlayExperimentState {
+    previous_combined: [u64; XOR_OVERLAY_WORDS],
+    sampled_ticks: u64,
+    unchanged_ticks: u64,
+    last_logged_tick: u64,
+}
+
+impl XorOverlayExperimentState {
+    const fn new() -> Self {
+        Self {
+            previous_combined: [0_u64; XOR_OVERLAY_WORDS],
+            sampled_ticks: 0,
+            unchanged_ticks: 0,
+            last_logged_tick: 0,
+        }
+    }
+}
+
 impl PumpkinError for GetBlockError {
     fn is_kick(&self) -> bool {
         false
@@ -203,6 +250,8 @@ pub struct World {
     unsent_block_changes: Mutex<HashMap<BlockPos, u16>>,
     /// POI storage for fast portal lookups
     pub portal_poi: Mutex<portal::PortalPoiStorage>,
+    /// Optional per-tick XOR overlay experiment state for evaluating sparse-update gains.
+    xor_overlay_experiment: StdMutex<XorOverlayExperimentState>,
 }
 
 impl PartialEq for World {
@@ -248,7 +297,121 @@ impl World {
             decrease_block_light_queue: SegQueue::new(),
             increase_block_light_queue: SegQueue::new(),
             server,
+            xor_overlay_experiment: StdMutex::new(XorOverlayExperimentState::new()),
         }
+    }
+
+    fn xor_overlay_spatial_hash(x: i32, y: i32, z: i32) -> usize {
+        let hx = (x as u32).wrapping_mul(0x9E37_79B9);
+        let hy = (y as u32).wrapping_mul(0x517C_C1B7);
+        let hz = (z as u32).wrapping_mul(0x85EB_CA6B);
+        let combined = hx ^ hy.wrapping_shl(5) ^ hz.wrapping_shl(10);
+        ((combined >> 18) as usize) & (XOR_OVERLAY_BITS - 1)
+    }
+
+    fn xor_overlay_bind(overlay: &mut [u64; XOR_OVERLAY_WORDS], x: i32, y: i32, z: i32) {
+        let bit = Self::xor_overlay_spatial_hash(x, y, z);
+        overlay[bit >> 6] |= 1_u64 << (bit & 63);
+    }
+
+    fn xor_overlay_changed_bits(
+        current: &[u64; XOR_OVERLAY_WORDS],
+        previous: &[u64; XOR_OVERLAY_WORDS],
+    ) -> u32 {
+        current
+            .iter()
+            .zip(previous.iter())
+            .map(|(left, right)| (left ^ right).count_ones())
+            .sum()
+    }
+
+    fn build_static_xor_overlay(&self) -> [u64; XOR_OVERLAY_WORDS] {
+        let mut overlay = [0_u64; XOR_OVERLAY_WORDS];
+        for loaded_chunk in self.level.loaded_chunks.iter() {
+            let chunk = loaded_chunk.key();
+            Self::xor_overlay_bind(&mut overlay, chunk.x, 0, chunk.y);
+        }
+        overlay
+    }
+
+    fn build_dynamic_xor_overlay(
+        &self,
+        players: &Arc<Vec<Arc<Player>>>,
+        entities: &Arc<Vec<Arc<dyn EntityBase>>>,
+    ) -> [u64; XOR_OVERLAY_WORDS] {
+        let mut overlay = [0_u64; XOR_OVERLAY_WORDS];
+
+        for player in players.iter() {
+            let pos = player.living_entity.entity.block_pos.load().0;
+            Self::xor_overlay_bind(&mut overlay, pos.x, pos.y, pos.z);
+        }
+
+        for entity in entities.iter() {
+            let pos = entity.get_entity().block_pos.load().0;
+            Self::xor_overlay_bind(&mut overlay, pos.x, pos.y, pos.z);
+        }
+
+        overlay
+    }
+
+    fn record_xor_overlay_experiment(
+        &self,
+        players: &Arc<Vec<Arc<Player>>>,
+        entities: &Arc<Vec<Arc<dyn EntityBase>>>,
+    ) {
+        if !xor_overlay_experiment_enabled() {
+            return;
+        }
+
+        let static_overlay = self.build_static_xor_overlay();
+        let dynamic_overlay = self.build_dynamic_xor_overlay(players, entities);
+
+        let mut combined_overlay = [0_u64; XOR_OVERLAY_WORDS];
+        for ((combined, static_word), dynamic_word) in combined_overlay
+            .iter_mut()
+            .zip(static_overlay.iter())
+            .zip(dynamic_overlay.iter())
+        {
+            *combined = *static_word ^ *dynamic_word;
+        }
+
+        let mut experiment = self
+            .xor_overlay_experiment
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+
+        experiment.sampled_ticks = experiment.sampled_ticks.saturating_add(1);
+
+        let changed_bits =
+            Self::xor_overlay_changed_bits(&combined_overlay, &experiment.previous_combined);
+        if changed_bits == 0 {
+            experiment.unchanged_ticks = experiment.unchanged_ticks.saturating_add(1);
+        }
+
+        let log_interval = xor_overlay_log_interval_ticks();
+        if experiment.sampled_ticks.saturating_sub(experiment.last_logged_tick) >= log_interval {
+            let unchanged_percent = if experiment.sampled_ticks == 0 {
+                0.0
+            } else {
+                (experiment.unchanged_ticks as f64 / experiment.sampled_ticks as f64) * 100.0
+            };
+
+            log::info!(
+                "xor-overlay-test world={} changed_bits={} unchanged={}/{} ({:.1}%) loaded_chunks={} entities={} players={}",
+                self.uuid,
+                changed_bits,
+                experiment.unchanged_ticks,
+                experiment.sampled_ticks,
+                unchanged_percent,
+                self.level.loaded_chunks.len(),
+                entities.len(),
+                players.len(),
+            );
+
+            experiment.last_logged_tick = experiment.sampled_ticks;
+        }
+
+        experiment.previous_combined = combined_overlay;
     }
 
     pub async fn shutdown(self: &Arc<Self>) {
@@ -645,6 +808,7 @@ impl World {
                 }
             }
         }
+        self.record_xor_overlay_experiment(&players, &entities_to_tick);
         let entity_elapsed = entity_start.elapsed();
 
         //self.level.chunk_loading.lock().unwrap().send_change();

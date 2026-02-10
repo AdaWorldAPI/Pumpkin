@@ -129,6 +129,7 @@ pub enum StoreProvider {
     /// `CachedStore<StaticStore>` — lazy `HashMap` + XOR write-through guard.
     Cached,
     /// `LanceStore` — Arrow columnar, hydrated from Static. Requires async.
+    #[cfg(feature = "lance-store")]
     Lance,
 }
 
@@ -148,6 +149,7 @@ impl StoreProvider {
         match self {
             Self::Static => Box::new(StaticStore::new()),
             Self::Cached => Box::new(CachedStore::new(StaticStore::new())),
+            #[cfg(feature = "lance-store")]
             Self::Lance => {
                 panic!("Lance tier requires async — use LanceStore::open() directly")
             }
@@ -202,6 +204,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "lance-store")]
     #[should_panic(expected = "Lance tier requires async")]
     fn provider_lance_panics_sync() {
         let _store = StoreProvider::Lance.open();
