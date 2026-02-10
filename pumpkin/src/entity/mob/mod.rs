@@ -2,6 +2,7 @@ use super::{Entity, EntityBase, NBTStorage, ai::path::Navigator, living::LivingE
 use crate::entity::EntityBaseFuture;
 use crate::entity::ai::control::look_control::LookControl;
 use crate::entity::ai::goal::goal_selector::GoalSelector;
+use crate::entity::ai::provider::{AiProviderKind, selected_ai_provider};
 use crate::server::Server;
 use crate::world::World;
 use crossbeam::atomic::AtomicCell;
@@ -223,6 +224,32 @@ pub trait Mob: EntityBase + Send + Sync {
     }
 }
 
+async fn tick_ai_vanilla(mob_entity: &MobEntity, mob: &dyn Mob) {
+    let age = mob_entity.living_entity.entity.age.load(Relaxed);
+    if (age + mob_entity.living_entity.entity.entity_id) % 2 != 0 && age > 1 {
+        mob_entity
+            .target_selector
+            .lock()
+            .await
+            .tick_goals(mob, false)
+            .await;
+        mob_entity
+            .goals_selector
+            .lock()
+            .await
+            .tick_goals(mob, false)
+            .await;
+    } else {
+        mob_entity.target_selector.lock().await.tick(mob).await;
+        mob_entity.goals_selector.lock().await.tick(mob).await;
+    }
+}
+
+async fn tick_ai_experimental_v1(mob_entity: &MobEntity, mob: &dyn Mob) {
+    // Minimal scaffold: preserve current semantics while enabling provider routing.
+    tick_ai_vanilla(mob_entity, mob).await;
+}
+
 impl<T: Mob + Send + 'static> EntityBase for T {
     fn tick<'a>(
         &'a self,
@@ -232,23 +259,13 @@ impl<T: Mob + Send + 'static> EntityBase for T {
         Box::pin(async move {
             let mob_entity = self.get_mob_entity();
 
-            let age = mob_entity.living_entity.entity.age.load(Relaxed);
-            if (age + mob_entity.living_entity.entity.entity_id) % 2 != 0 && age > 1 {
-                mob_entity
-                    .target_selector
-                    .lock()
-                    .await
-                    .tick_goals(self, false)
-                    .await;
-                mob_entity
-                    .goals_selector
-                    .lock()
-                    .await
-                    .tick_goals(self, false)
-                    .await;
-            } else {
-                mob_entity.target_selector.lock().await.tick(self).await;
-                mob_entity.goals_selector.lock().await.tick(self).await;
+            match selected_ai_provider() {
+                AiProviderKind::Vanilla => {
+                    tick_ai_vanilla(mob_entity, self).await;
+                }
+                AiProviderKind::ExperimentalV1 => {
+                    tick_ai_experimental_v1(mob_entity, self).await;
+                }
             }
 
             let mut navigator = mob_entity.navigator.lock().await;
