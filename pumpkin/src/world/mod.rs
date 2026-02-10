@@ -158,9 +158,7 @@ fn xor_overlay_experiment_enabled() -> bool {
     static ENABLED: OnceLock<bool> = OnceLock::new();
     *ENABLED.get_or_init(|| {
         std::env::var("PUMPKIN_XOR_OVERLAY_TEST").is_ok_and(|value| {
-            value == "1"
-                || value.eq_ignore_ascii_case("true")
-                || value.eq_ignore_ascii_case("yes")
+            value == "1" || value.eq_ignore_ascii_case("true") || value.eq_ignore_ascii_case("yes")
         })
     })
 }
@@ -389,7 +387,11 @@ impl World {
         }
 
         let log_interval = xor_overlay_log_interval_ticks();
-        if experiment.sampled_ticks.saturating_sub(experiment.last_logged_tick) >= log_interval {
+        if experiment
+            .sampled_ticks
+            .saturating_sub(experiment.last_logged_tick)
+            >= log_interval
+        {
             let unchanged_percent = if experiment.sampled_ticks == 0 {
                 0.0
             } else {
