@@ -9,6 +9,7 @@ use pumpkin_data::damage::DamageType;
 use pumpkin_data::meta_data_type::MetaDataType;
 use pumpkin_data::tracked_data::TrackedData;
 use pumpkin_protocol::java::client::play::Metadata;
+use pumpkin_util::math::boundingbox::BoundingBox;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_util::math::vector3::Vector3;
 use std::pin::Pin;
@@ -125,6 +126,76 @@ impl MobEntity {
                 .await;
         }
     }
+
+    pub async fn is_in_attack_range(&self, target: &dyn EntityBase) -> bool {
+        const DEFAULT_ATTACK_RANGE: f64 = 0.828_427_12; // sqrt(2.04) - 0.6
+
+        // TODO: Implement DataComponent lookup for ATTACK_RANGE when components are ready
+        let max_range = DEFAULT_ATTACK_RANGE;
+        let min_range = 0.0;
+
+        let target_hitbox = target.get_entity().bounding_box.load();
+
+        let attack_box_max = self.get_attack_box(max_range).await;
+
+        let intersects_max = attack_box_max.intersects(&target_hitbox);
+
+        if !intersects_max {
+            return false;
+        }
+
+        if min_range > 0.0 {
+            let attack_box_min = self.get_attack_box(min_range).await;
+            if attack_box_min.intersects(&target_hitbox) {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    pub async fn try_attack(&self, caller: &dyn EntityBase, target: &dyn EntityBase) {
+        // TODO: Use entity attributes for damage once implemented
+        const ZOMBIE_ATTACK_DAMAGE: f32 = 3.0;
+
+        target
+            .damage_with_context(
+                target,
+                ZOMBIE_ATTACK_DAMAGE,
+                DamageType::MOB_ATTACK,
+                None,
+                Some(caller),
+                Some(caller),
+            )
+            .await;
+    }
+
+    async fn get_attack_box(&self, attack_range: f64) -> BoundingBox {
+        let vehicle_lock = self.living_entity.entity.vehicle.lock().await;
+
+        let base_box = vehicle_lock.as_ref().map_or_else(
+            || self.living_entity.entity.bounding_box.load(),
+            |vehicle| {
+                let vehicle_box = vehicle.get_entity().bounding_box.load();
+                let my_box = self.living_entity.entity.bounding_box.load();
+
+                BoundingBox {
+                    min: Vector3::new(
+                        my_box.min.x.min(vehicle_box.min.x),
+                        my_box.min.y,
+                        my_box.min.z.min(vehicle_box.min.z),
+                    ),
+                    max: Vector3::new(
+                        my_box.max.x.max(vehicle_box.max.x),
+                        my_box.max.y,
+                        my_box.max.z.max(vehicle_box.max.z),
+                    ),
+                }
+            },
+        );
+
+        base_box.expand(attack_range, 0.0, attack_range)
+    }
 }
 
 // This trait contains all overridable functions
@@ -160,7 +231,6 @@ impl<T: Mob + Send + 'static> EntityBase for T {
     ) -> EntityBaseFuture<'a, ()> {
         Box::pin(async move {
             let mob_entity = self.get_mob_entity();
-            mob_entity.living_entity.tick(caller, server).await;
 
             let age = mob_entity.living_entity.entity.age.load(Relaxed);
             if (age + mob_entity.living_entity.entity.entity_id) % 2 != 0 && age > 1 {
@@ -188,6 +258,9 @@ impl<T: Mob + Send + 'static> EntityBase for T {
             let mut look_control = mob_entity.look_control.lock().await;
             look_control.tick(self).await;
             drop(look_control);
+
+            // Physics tick runs after AI updates movement intent.
+            mob_entity.living_entity.tick(caller, server).await;
         })
     }
 

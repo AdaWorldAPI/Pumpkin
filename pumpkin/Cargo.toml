@@ -92,6 +92,7 @@ console-subscriber = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile.workspace = true
+criterion.workspace = true
 
 [features]
 console-subscriber = ["dep:console-subscriber"]
