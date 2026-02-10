@@ -97,6 +97,7 @@ criterion.workspace = true
 [features]
 console-subscriber = ["dep:console-subscriber"]
 tokio_taskdump = ["pumpkin-world/tokio_taskdump"]
+holograph-provider = []
 
 [lints]
 workspace = true

@@ -2,6 +2,10 @@ use super::{Entity, EntityBase, NBTStorage, ai::path::Navigator, living::LivingE
 use crate::entity::EntityBaseFuture;
 use crate::entity::ai::control::look_control::LookControl;
 use crate::entity::ai::goal::goal_selector::GoalSelector;
+#[cfg(feature = "holograph-provider")]
+use crate::entity::ai::holograph::{
+    disable_holograph_runtime, evaluate_holograph_tick_plan, holograph_shadow_mode_enabled,
+};
 use crate::entity::ai::provider::{AiProviderKind, selected_ai_provider};
 use crate::server::Server;
 use crate::world::World;
@@ -226,7 +230,21 @@ pub trait Mob: EntityBase + Send + Sync {
 
 async fn tick_ai_vanilla(mob_entity: &MobEntity, mob: &dyn Mob) {
     let age = mob_entity.living_entity.entity.age.load(Relaxed);
-    if (age + mob_entity.living_entity.entity.entity_id) % 2 != 0 && age > 1 {
+    let tick_goals_only = should_tick_goals_only(age, mob_entity.living_entity.entity.entity_id);
+    tick_ai_with_plan(mob_entity, mob, tick_goals_only).await;
+}
+
+async fn tick_ai_experimental_v1(mob_entity: &MobEntity, mob: &dyn Mob) {
+    // Minimal scaffold: preserve current semantics while enabling provider routing.
+    tick_ai_vanilla(mob_entity, mob).await;
+}
+
+const fn should_tick_goals_only(age: i32, entity_id: i32) -> bool {
+    (age + entity_id) % 2 != 0 && age > 1
+}
+
+async fn tick_ai_with_plan(mob_entity: &MobEntity, mob: &dyn Mob, tick_goals_only: bool) {
+    if tick_goals_only {
         mob_entity
             .target_selector
             .lock()
@@ -245,9 +263,35 @@ async fn tick_ai_vanilla(mob_entity: &MobEntity, mob: &dyn Mob) {
     }
 }
 
-async fn tick_ai_experimental_v1(mob_entity: &MobEntity, mob: &dyn Mob) {
-    // Minimal scaffold: preserve current semantics while enabling provider routing.
-    tick_ai_vanilla(mob_entity, mob).await;
+#[cfg(feature = "holograph-provider")]
+async fn tick_ai_holograph(mob_entity: &MobEntity, mob: &dyn Mob) {
+    let age = mob_entity.living_entity.entity.age.load(Relaxed);
+    let entity_id = mob_entity.living_entity.entity.entity_id;
+    let vanilla_plan = should_tick_goals_only(age, entity_id);
+
+    let holograph_plan = match evaluate_holograph_tick_plan(age, entity_id) {
+        Ok(plan) => plan,
+        Err(error) => {
+            disable_holograph_runtime(error);
+            tick_ai_with_plan(mob_entity, mob, vanilla_plan).await;
+            return;
+        }
+    };
+
+    if holograph_shadow_mode_enabled() {
+        if holograph_plan.tick_goals_only != vanilla_plan {
+            log::warn!(
+                "Holograph shadow diff: entity_id={} vanilla_tick_goals_only={} holograph_tick_goals_only={}",
+                entity_id,
+                vanilla_plan,
+                holograph_plan.tick_goals_only
+            );
+        }
+        tick_ai_with_plan(mob_entity, mob, vanilla_plan).await;
+        return;
+    }
+
+    tick_ai_with_plan(mob_entity, mob, holograph_plan.tick_goals_only).await;
 }
 
 impl<T: Mob + Send + 'static> EntityBase for T {
@@ -265,6 +309,10 @@ impl<T: Mob + Send + 'static> EntityBase for T {
                 }
                 AiProviderKind::ExperimentalV1 => {
                     tick_ai_experimental_v1(mob_entity, self).await;
+                }
+                #[cfg(feature = "holograph-provider")]
+                AiProviderKind::Holograph => {
+                    tick_ai_holograph(mob_entity, self).await;
                 }
             }
 
