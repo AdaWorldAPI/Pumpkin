@@ -141,6 +141,7 @@ __pycache__/
 
 # Generated Data
 pumpkin-data/src/generated
+.claude/specs/**/*.zip
 
 # Vanilla minecraft server
 banned-ips.json

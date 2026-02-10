@@ -1,11 +1,21 @@
 use crate::{SHOULD_STOP, server::Server};
 use std::{
-    sync::{Arc, atomic::Ordering},
+    sync::{Arc, OnceLock, atomic::Ordering},
     time::{Duration, Instant},
 };
 use tokio::time::sleep;
 
 pub struct Ticker;
+
+fn idle_tick_interval() -> Option<Duration> {
+    static INTERVAL: OnceLock<Option<Duration>> = OnceLock::new();
+    *INTERVAL.get_or_init(|| {
+        std::env::var("PUMPKIN_IDLE_TICK_MS")
+            .ok()
+            .and_then(|value| value.parse::<u64>().ok())
+            .and_then(|millis| (millis > 0).then_some(Duration::from_millis(millis)))
+    })
+}
 
 impl Ticker {
     /// IMPORTANT: Run this in a new thread/tokio task.
@@ -44,6 +54,9 @@ impl Ticker {
 
             let tick_interval = if manager.is_sprinting() {
                 Duration::ZERO
+            } else if !server.has_n_players(1) {
+                idle_tick_interval()
+                    .unwrap_or_else(|| Duration::from_nanos(manager.nanoseconds_per_tick() as u64))
             } else {
                 Duration::from_nanos(manager.nanoseconds_per_tick() as u64)
             };
