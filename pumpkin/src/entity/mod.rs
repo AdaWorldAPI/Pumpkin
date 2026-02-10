@@ -399,7 +399,9 @@ pub struct Entity {
 }
 
 /// Pure, synchronous collision math extracted from `adjust_movement_for_collisions`.
-/// Returns (adjusted_movement, supporting_block_pos, horizontal_collision)
+/// Returns (`adjusted_movement`, `supporting_block_pos`, `horizontal_collision`)
+#[must_use]
+#[allow(clippy::needless_pass_by_value)]
 pub fn compute_collision_math(
     movement: Vector3<f64>,
     bounding_box: BoundingBox,
@@ -423,9 +425,7 @@ pub fn compute_collision_math(
 
         let mut positions = block_positions.into_iter();
 
-        let (mut collisions_len, mut position) = if let Some((len, pos)) = positions.next() {
-            (len, pos)
-        } else {
+        let Some((mut collisions_len, mut position)) = positions.next() else {
             return (adjusted_movement, None, false);
         };
 
@@ -725,7 +725,6 @@ impl Entity {
         }
     }
 
-    #[expect(clippy::float_cmp)]
     async fn adjust_movement_for_collisions(&self, movement: Vector3<f64>) -> Vector3<f64> {
         // Offload heavy collision math to a blocking thread to avoid starving
         // the async runtime. We'll collect minimal data here and perform the

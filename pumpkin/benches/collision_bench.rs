@@ -1,16 +1,17 @@
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
-use pumpkin::entity::Entity;
-use pumpkin::entity::compute_collision_math;
+use criterion::{Criterion, criterion_group, criterion_main};
+use pumpkin::entity::{Entity, compute_collision_math};
+use pumpkin_data::entity::EntityPose;
 use pumpkin_util::math::boundingbox::BoundingBox;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_util::math::vector3::Vector3;
+use std::hint::black_box;
 
 fn criterion_benchmark(c: &mut Criterion) {
     let bbox = BoundingBox::new_from_pos(
         0.0,
         0.0,
         0.0,
-        &pumpkin::entity::Entity::get_entity_dimensions(pumpkin::entity::EntityPose::Standing),
+        &Entity::get_entity_dimensions(EntityPose::Standing),
     );
     let movement = Vector3::new(1.0, 0.0, 1.0);
 
@@ -19,13 +20,13 @@ fn criterion_benchmark(c: &mut Criterion) {
             0.5,
             0.0,
             0.5,
-            &pumpkin::entity::Entity::get_entity_dimensions(pumpkin::entity::EntityPose::Standing),
+            &Entity::get_entity_dimensions(EntityPose::Standing),
         ),
         BoundingBox::new_from_pos(
             0.5,
             1.0,
             0.5,
-            &pumpkin::entity::Entity::get_entity_dimensions(pumpkin::entity::EntityPose::Standing),
+            &Entity::get_entity_dimensions(EntityPose::Standing),
         ),
     ];
 
@@ -38,11 +39,11 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter(|| {
             compute_collision_math(
                 black_box(movement),
-                black_box(bbox.clone()),
+                black_box(bbox),
                 black_box(collisions.clone()),
                 black_box(block_positions.clone()),
             )
-        })
+        });
     });
 }
 
