@@ -2084,7 +2084,10 @@ impl GenerationSchedule {
                                         cache.chunks.push(Chunk::Level(chunk.clone()));
                                         holder.chunk = Some(Chunk::Level(chunk));
                                     }
-                                    Proto(chunk) => cache.chunks.push(Proto(chunk)),
+                                    Proto(chunk) => {
+                                        cache.chunks.push(Proto(chunk.clone()));
+                                        holder.chunk = Some(Proto(chunk));
+                                    }
                                 }
 
                                 debug_assert!(holder.occupied.is_null());
