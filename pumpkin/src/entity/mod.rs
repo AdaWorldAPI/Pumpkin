@@ -739,9 +739,6 @@ impl Entity {
         }
 
         let world = self.world.load();
-        if world.players.load().is_empty() {
-            return movement;
-        }
         let bounding_box = self.bounding_box.load();
 
         // Collect collision candidates from the world (async, short critical section)
