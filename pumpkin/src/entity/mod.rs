@@ -738,12 +738,10 @@ impl Entity {
             return movement;
         }
 
-        // Skip expensive collision checks if no players are online to conserve CPU
         let world = self.world.load();
         if world.players.load().is_empty() {
             return movement;
         }
-
         let bounding_box = self.bounding_box.load();
 
         // Collect collision candidates from the world (async, short critical section)
@@ -755,20 +753,13 @@ impl Entity {
             return movement;
         }
 
-        // Move the heavy math to a blocking thread. Clone only what's needed.
+        // Move the heavy math to a blocking thread.
         let movement_clone = movement;
         let bbox_clone = bounding_box;
-        let collisions_clone = collisions.clone();
-        let block_positions_clone = block_positions.clone();
 
         let (final_move, supporting_pos, horiz_collision) =
             tokio::task::spawn_blocking(move || {
-                compute_collision_math(
-                    movement_clone,
-                    bbox_clone,
-                    collisions_clone,
-                    block_positions_clone,
-                )
+                compute_collision_math(movement_clone, bbox_clone, collisions, block_positions)
             })
             .await
             .unwrap_or((movement, None, false));
