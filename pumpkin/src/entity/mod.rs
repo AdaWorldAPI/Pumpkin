@@ -423,8 +423,7 @@ pub fn compute_collision_math(
 
         let mut positions = block_positions.into_iter();
 
-        let (mut collisions_len, mut position) = if let Some((len, pos)) = positions.next()
-        {
+        let (mut collisions_len, mut position) = if let Some((len, pos)) = positions.next() {
             (len, pos)
         } else {
             return (adjusted_movement, None, false);
@@ -468,12 +467,9 @@ pub fn compute_collision_math(
         let mut max_time = 1.0;
 
         for inert_box in &collisions {
-            if let Some(collision_time) = bounding_box.calculate_collision_time(
-                inert_box,
-                adjusted_movement,
-                axis,
-                max_time,
-            ) {
+            if let Some(collision_time) =
+                bounding_box.calculate_collision_time(inert_box, adjusted_movement, axis, max_time)
+            {
                 max_time = collision_time;
             }
         }
@@ -485,7 +481,11 @@ pub fn compute_collision_math(
         }
     }
 
-    (adjusted_movement, supporting_block_pos, horizontal_collision)
+    (
+        adjusted_movement,
+        supporting_block_pos,
+        horizontal_collision,
+    )
 }
 
 impl Entity {
@@ -741,7 +741,7 @@ impl Entity {
 
         // Skip expensive collision checks if no players are online to conserve CPU
         let world = self.world.load();
-            if world.players.load().is_empty() {
+        if world.players.load().is_empty() {
             return movement;
         }
 
@@ -762,18 +762,17 @@ impl Entity {
         let collisions_clone = collisions.clone();
         let block_positions_clone = block_positions.clone();
 
-        let (final_move, supporting_pos, horiz_collision) = tokio::task::spawn_blocking(
-            move || {
+        let (final_move, supporting_pos, horiz_collision) =
+            tokio::task::spawn_blocking(move || {
                 compute_collision_math(
                     movement_clone,
                     bbox_clone,
                     collisions_clone,
                     block_positions_clone,
                 )
-            },
-        )
-        .await
-        .unwrap_or((movement, None, false));
+            })
+            .await
+            .unwrap_or((movement, None, false));
 
         self.on_ground
             .store(supporting_pos.is_some(), Ordering::SeqCst);
