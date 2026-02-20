@@ -307,20 +307,19 @@ impl JavaClient {
     }
 
     pub async fn send_packet_now_data(&self, packet: Vec<u8>) {
-        if let Err(err) = self
-            .network_writer
-            .lock()
-            .await
-            .write_packet(packet.into())
-            .await
-        {
-            // It is expected that the packet will fail if we are closed
+        let mut writer = self.network_writer.lock().await;
+        if let Err(err) = writer.write_packet(packet.into()).await {
             if !self.close_token.is_cancelled() {
                 log::warn!("Failed to send packet to client {}: {}", self.id, err);
-                // We now need to close the connection to the client since the stream is in an
-                // unknown state
                 self.close();
             }
+            return;
+        }
+        if let Err(err) = writer.flush().await
+            && !self.close_token.is_cancelled()
+        {
+            log::warn!("Failed to flush packet for client {}: {}", self.id, err);
+            self.close();
         }
     }
 
@@ -437,16 +436,22 @@ impl JavaClient {
                     break;
                 };
 
-                if let Err(err) = writer.lock().await.write_packet(packet_data).await {
-                    // It is expected that the packet will fail if we are closed
+                let mut locked_writer = writer.lock().await;
+                if let Err(err) = locked_writer.write_packet(packet_data).await {
                     if !close_token.is_cancelled() {
-                        log::warn!("Failed to send packet to client {id}: {err}",);
-                        // We now need to close the connection to the client since the stream is in an
-                        // unknown state
+                        log::warn!("Failed to send packet to client {id}: {err}");
                         close_token.cancel();
-                        break;
                     }
+                    break;
                 }
+                if let Err(err) = locked_writer.flush().await {
+                    if !close_token.is_cancelled() {
+                        log::warn!("Failed to flush packet for client {id}: {err}");
+                        close_token.cancel();
+                    }
+                    break;
+                }
+                drop(locked_writer);
             }
         });
     }
