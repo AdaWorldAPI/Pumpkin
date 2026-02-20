@@ -83,6 +83,12 @@ The Entity agent also depends on the tick loop being correct for entity AI and p
 
 The gap analysis said lib.rs was 23K lines. It's actually 607. CORE-001 confirms no decomposition needed. Do not revisit this.
 
+## Upstream Debt (2026-02-20)
+- PORT: CPU load fix `ad77d65` (4 conflicts — constant core load after player join)
+- PORT: `log` → `tracing` migration `24ea53b` (LARGE — replaces logging framework)
+- CHERRY-PICK: `ba40fcd` (sleeping percentage gamerule — clean)
+- PORT: World names `a9c8ab5` (3 conflicts)
+
 ## Your Task This Session
 
 Priority areas:

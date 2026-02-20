@@ -95,6 +95,14 @@ These are block events (BlockRedstoneEvent, BlockPistonExtendEvent, BlockPistonR
 
 - **Core/Entity:** DispenserBlockEntity for actual dispensing behavior (outside your scope)
 
+## Upstream Debt (2026-02-20)
+- PORT: Water flow fix `7e277c0` (3 conflicts), waterlogged blocks `9257b90` (3 conflicts)
+- PORT: Multiple fluid flow bugs `6e1bea7` (6 conflicts)
+- PORT: Fence gate redstone `6eddc17` (1 conflict), trapped chest `bb75b78` (4 conflicts)
+- PORT: Piston ghost blocks fix `7d10824`
+- PORT: Cobweb `3a9468d`, wither rose collision `bc8ffa2`
+- PORT: Lava and fire behavior `b3fc910`
+
 ## Your Task This Session
 
 Priority areas:
