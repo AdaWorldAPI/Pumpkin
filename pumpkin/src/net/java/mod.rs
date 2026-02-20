@@ -61,6 +61,7 @@ pub mod status;
 
 use crate::entity::player::Player;
 use crate::net::{GameProfile, PlayerConfig};
+use crate::plugin::player::player_custom_payload::PlayerCustomPayloadEvent;
 use crate::{error::PumpkinError, net::EncryptionError, server::Server};
 
 pub struct JavaClient {
@@ -685,6 +686,14 @@ impl JavaClient {
             }
             id if id == SCustomPayload::PACKET_ID => {
                 let payload_packet = SCustomPayload::read(payload)?;
+                // Fire player-level custom payload event
+                let event = PlayerCustomPayloadEvent::new(
+                    player.clone(),
+                    payload_packet.channel.clone(),
+                    Bytes::from(payload_packet.data.clone()),
+                );
+                server.plugin_manager.fire(event).await;
+                // Fire server-level custom payload event (legacy)
                 server
                     .plugin_manager
                     .fire(
