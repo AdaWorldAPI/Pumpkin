@@ -60,8 +60,8 @@ impl EntityBase for TNTEntity {
                 entity.send_velocity().await;
             }
 
-            let fuse = self.fuse.fetch_sub(1, Relaxed);
-            if fuse == 0 {
+            let fuse = self.fuse.load(Relaxed);
+            if fuse <= 1 {
                 self.entity.remove().await;
                 self.entity
                     .world
@@ -69,6 +69,7 @@ impl EntityBase for TNTEntity {
                     .explode(self.entity.pos.load(), self.power)
                     .await;
             } else {
+                self.fuse.store(fuse - 1, Relaxed);
                 entity.update_fluid_state(&caller).await;
             }
         })

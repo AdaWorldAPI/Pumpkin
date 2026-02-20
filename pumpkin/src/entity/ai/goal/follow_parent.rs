@@ -16,17 +16,17 @@ pub struct FollowParentGoal {
     speed: f64,
     /// Entity ID of the parent being followed (0 = none).
     parent_id: i32,
-    /// Maximum range to search for a parent.
+    /// Maximum range to search for a parent (vanilla: 8 blocks).
     search_range: f64,
-    /// Distance at which following stops (close enough).
+    /// Distance at which following stops (vanilla: 3^2 = 9.0).
     stop_distance_sq: f64,
     /// Delay between re-scans when no parent is found.
     delay: i32,
 }
 
 impl FollowParentGoal {
-    /// Default follow distance before stopping (squared: 9^2 = 81).
-    const DEFAULT_STOP_DISTANCE_SQ: f64 = 81.0;
+    /// Default follow distance before stopping (vanilla: 3^2 = 9.0).
+    const DEFAULT_STOP_DISTANCE_SQ: f64 = 9.0;
     /// Re-scan delay when no parent is found: 200 ticks (10 seconds).
     const SCAN_DELAY: i32 = 200;
 
@@ -36,7 +36,7 @@ impl FollowParentGoal {
             goal_control: Controls::MOVE,
             speed,
             parent_id: 0,
-            search_range: 16.0,
+            search_range: 8.0,
             stop_distance_sq: Self::DEFAULT_STOP_DISTANCE_SQ,
             delay: 0,
         })

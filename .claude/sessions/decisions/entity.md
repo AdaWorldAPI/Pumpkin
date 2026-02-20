@@ -111,3 +111,21 @@ Standard scale: Swim=0, Panic=1, Attack=2, Special=4-5, Wander=6, LookAt=7, Look
 **Session:** entity-015
 **Decision:** Among remaining passive mobs audited (Llama, Bee, Ocelot, Parrot, Polar Bear, Dolphin, Allay), only Llama and Bee are breedable in vanilla. Ocelot lost breeding in 1.14 (trust-only). Parrot, Polar Bear, Dolphin, and Allay are not breedable.
 **Rationale:** Vanilla 1.21 game mechanics. Only breedable mobs should have BreedGoal/FollowParentGoal. Ocelot has TemptGoal for trust-building but no breed. Also added FleeEntityGoal(Ocelot) to Creeper/Phantom since vanilla mobs flee both Cat and Ocelot.
+
+## ENT-019: Cherry-Pick 5 Clean Upstream Fixes
+**Date:** 2026-02-20
+**Session:** entity-016
+**Decision:** Cherry-picked 5 zero-conflict upstream commits: mob-dead-attack (8433f05), teleport fix (3f170e4), knockback on kill (a653726), hitbox check (528d5b3), sleeping percentage (ba40fcd).
+**Rationale:** All identified as zero-risk in upstream sync analysis. Improve vanilla parity without touching agent work.
+
+## ENT-020: Multi-Conflict Ports Deferred to Cross-Agent Coordination
+**Date:** 2026-02-20
+**Session:** entity-016
+**Decision:** Collision fix (e438e09), totem fix (5a5b9e4), item drop velocity (15fbf8f) require changes in pumpkin-util and block/ scope. Deferred until Architect provides AtomicF32 and block agent adds get_inside_collision_shape.
+**Rationale:** These cross agent boundaries. Entity-scope portions are ready to apply once infrastructure lands.
+
+## ENT-021: Vanilla Parameter Alignment for AI Goals
+**Date:** 2026-02-20
+**Session:** entity-016
+**Decision:** Aligned FollowParentGoal (search 16→8, stop 81→9), PanicGoal (flee ±10→±5) with vanilla values. Fixed CreeperIgniteGoal stop() to reset fuse_speed to -1.
+**Rationale:** Upstream audit revealed our parameters were 2-3x vanilla values. The CreeperIgniteGoal bug causes creepers to continue fuse countdown after goal interruption — a live gameplay bug.

@@ -758,10 +758,10 @@ impl LivingEntity {
     }
 
     pub fn get_swim_height(&self) -> f64 {
-        let eye_height = self.entity.entity_dimension.load().eye_height;
+        let eye_height = self.entity.get_eye_height();
 
         if self.entity.entity_type == &EntityType::BREEZE {
-            f64::from(eye_height)
+            eye_height
         } else if eye_height < 0.4 {
             0.0
         } else {
@@ -956,10 +956,6 @@ impl LivingEntity {
             .compare_exchange(false, true, Relaxed, Relaxed)
             .is_ok()
         {
-            // Immediately clear all movement/velocity so the dead entity stops being
-            // simulated by physics and doesn't accumulate additional fall_distance.
-            self.entity.velocity.store(Vector3::default());
-            self.entity.velocity_dirty.store(true, SeqCst);
             self.movement_input.store(Vector3::default());
             self.jumping.store(false, Relaxed);
             // Plays the death sound

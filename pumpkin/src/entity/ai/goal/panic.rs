@@ -32,9 +32,9 @@ impl PanicGoal {
         let pos = mob_entity.living_entity.entity.pos.load();
         let mut rng = mob.get_random();
 
-        // Run to a random position 5-10 blocks away
-        let dx = rng.random_range(-10.0f64..10.0);
-        let dz = rng.random_range(-10.0f64..10.0);
+        // Run to a random position up to 5 blocks away (vanilla)
+        let dx = rng.random_range(-5.0f64..5.0);
+        let dz = rng.random_range(-5.0f64..5.0);
 
         Vector3::new(pos.x + dx, pos.y, pos.z + dz)
     }
