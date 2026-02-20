@@ -251,6 +251,16 @@ impl World {
         }
     }
 
+    /// Get the world folder name (e.g., `world`, `DIM-1`, `DIM1`).
+    pub fn get_world_name(&self) -> &str {
+        self.level
+            .level_folder
+            .root_folder
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("world")
+    }
+
     pub async fn shutdown(self: &Arc<Self>) {
         for entity in self.entities.load().iter() {
             self.save_entity(entity).await;
@@ -2152,8 +2162,19 @@ impl World {
             .count();
         drop(players);
 
-        // TODO: sleep ratio
-        sleeping_player_count == player_count && player_count != 0
+        if player_count == 0 {
+            return false;
+        }
+
+        let sleep_percentage = self
+            .level_info
+            .load()
+            .game_rules
+            .players_sleeping_percentage;
+        let required_sleeping =
+            ((player_count as f64 * sleep_percentage as f64) / 100.0).ceil() as usize;
+
+        sleeping_player_count >= required_sleeping
     }
 
     // NOTE: This function doesn't actually await on anything, it just spawns two tokio tasks
