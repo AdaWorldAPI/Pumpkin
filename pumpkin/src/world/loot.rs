@@ -297,6 +297,24 @@ fn apply_enchanted_count_increase(
     }
 }
 
+fn check_table_bonus(params: &LootContextParameters, enchantment: &str, chances: &[f32]) -> bool {
+    if chances.is_empty() {
+        return true;
+    }
+    let level = params
+        .tool
+        .as_ref()
+        .and_then(|tool| {
+            let key = enchantment
+                .strip_prefix("minecraft:")
+                .unwrap_or(enchantment);
+            Enchantment::from_name(key).map(|ench| tool.get_enchantment_level(ench))
+        })
+        .unwrap_or(0) as usize;
+    let idx = level.min(chances.len() - 1);
+    rand::rng().random::<f32>() < chances[idx]
+}
+
 trait LootPoolEntryTypesExt {
     fn get_stacks(&self, params: &LootContextParameters) -> Vec<ItemStack>;
 }
@@ -304,17 +322,18 @@ trait LootPoolEntryTypesExt {
 impl LootPoolEntryTypesExt for LootPoolEntryTypes {
     fn get_stacks(&self, params: &LootContextParameters) -> Vec<ItemStack> {
         match self {
-            Self::Empty => Vec::new(),
             Self::Item(item_entry) => {
                 let key = &item_entry.name.strip_prefix("minecraft:").unwrap();
                 vec![ItemStack::new(1, Item::from_registry_key(key).unwrap())]
             }
-            // These entry types need data fields (nested table name, tag name,
-            // children list) that are not yet parsed by the codegen in pumpkin-data.
-            // Return empty instead of crashing. Raise to Architect if needed.
-            Self::LootTable | Self::Dynamic | Self::Tag | Self::Sequence | Self::Group => {
-                Vec::new()
-            }
+            // Empty is intentionally empty. LootTable has value parsed but
+            // needs a runtime registry. Others need codegen data not yet available.
+            Self::Empty
+            | Self::LootTable(_)
+            | Self::Dynamic
+            | Self::Tag
+            | Self::Sequence
+            | Self::Group => Vec::new(),
             Self::Alternatives(alternative_entry) => {
                 for entry in alternative_entry.children {
                     if let Some(loot) = entry.get_loot(params) {
@@ -412,12 +431,15 @@ impl LootConditionExt for LootCondition {
                 }
                 true
             }
+            Self::TableBonus {
+                enchantment,
+                chances,
+            } => check_table_bonus(params, enchantment, chances),
             // These conditions need data not yet in codegen. Default to permissive
             // so loot drops rather than being silently blocked.
             Self::RandomChanceWithEnchantedBonus
             | Self::EntityProperties
             | Self::EntityScores
-            | Self::TableBonus
             | Self::DamageSourceProperties
             | Self::LocationCheck
             | Self::WeatherCheck
