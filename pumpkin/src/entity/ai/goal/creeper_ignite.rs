@@ -55,7 +55,7 @@ impl Goal for CreeperIgniteGoal {
 
     fn stop<'a>(&'a mut self, _mob: &'a dyn Mob) -> GoalFuture<'a, ()> {
         Box::pin(async move {
-            // TODO
+            self.creeper.set_fuse_speed(-1).await;
         })
     }
 
