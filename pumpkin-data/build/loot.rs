@@ -190,9 +190,7 @@ pub enum LootPoolEntryTypesStruct {
     #[serde(rename = "minecraft:item")]
     Item(ItemEntryStruct),
     #[serde(rename = "minecraft:loot_table")]
-    LootTable {
-        value: String,
-    },
+    LootTable { value: String },
     #[serde(rename = "minecraft:dynamic")]
     Dynamic,
     #[serde(rename = "minecraft:tag")]
@@ -215,7 +213,9 @@ impl ToTokens for LootPoolEntryTypesStruct {
                 tokens.extend(quote! { LootPoolEntryTypes::Item(#item) });
             }
             Self::LootTable { value } => {
-                tokens.extend(quote! { LootPoolEntryTypes::LootTable(LootTableRefEntry { value: #value }) });
+                tokens.extend(
+                    quote! { LootPoolEntryTypes::LootTable(LootTableRefEntry { value: #value }) },
+                );
             }
             Self::Dynamic => {
                 tokens.extend(quote! { LootPoolEntryTypes::Dynamic });

@@ -297,11 +297,7 @@ fn apply_enchanted_count_increase(
     }
 }
 
-fn check_table_bonus(
-    params: &LootContextParameters,
-    enchantment: &str,
-    chances: &[f32],
-) -> bool {
+fn check_table_bonus(params: &LootContextParameters, enchantment: &str, chances: &[f32]) -> bool {
     if chances.is_empty() {
         return true;
     }
