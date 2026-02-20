@@ -10,10 +10,15 @@ pub struct Ticker;
 fn idle_tick_interval() -> Option<Duration> {
     static INTERVAL: OnceLock<Option<Duration>> = OnceLock::new();
     *INTERVAL.get_or_init(|| {
-        std::env::var("PUMPKIN_IDLE_TICK_MS")
-            .ok()
-            .and_then(|value| value.parse::<u64>().ok())
-            .and_then(|millis| (millis > 0).then_some(Duration::from_millis(millis)))
+        std::env::var("PUMPKIN_IDLE_TICK_MS").map_or_else(
+            |_| Some(Duration::from_millis(1000)),
+            |value| {
+                value
+                    .parse::<u64>()
+                    .ok()
+                    .and_then(|millis| (millis > 0).then_some(Duration::from_millis(millis)))
+            },
+        )
     })
 }
 
@@ -24,6 +29,7 @@ impl Ticker {
         while !SHOULD_STOP.load(Ordering::Relaxed) {
             let tick_start_time = Instant::now();
             let manager = &server.tick_rate_manager;
+            let no_players_online = !server.has_n_players(1);
 
             manager.tick();
 
@@ -54,7 +60,7 @@ impl Ticker {
 
             let tick_interval = if manager.is_sprinting() {
                 Duration::ZERO
-            } else if !server.has_n_players(1) {
+            } else if no_players_online {
                 idle_tick_interval()
                     .unwrap_or_else(|| Duration::from_nanos(manager.nanoseconds_per_tick() as u64))
             } else {
@@ -64,7 +70,21 @@ impl Ticker {
             if let Some(sleep_time) = tick_interval.checked_sub(elapsed)
                 && !sleep_time.is_zero()
             {
-                sleep(sleep_time).await;
+                if no_players_online {
+                    // Keep idle sleeps interruptible so the first joining player wakes
+                    // the simulation quickly even with a large idle interval configured.
+                    let mut remaining = sleep_time;
+                    while !remaining.is_zero()
+                        && !SHOULD_STOP.load(Ordering::Relaxed)
+                        && !server.has_n_players(1)
+                    {
+                        let step = remaining.min(Duration::from_millis(50));
+                        sleep(step).await;
+                        remaining = remaining.saturating_sub(step);
+                    }
+                } else {
+                    sleep(sleep_time).await;
+                }
             }
 
             last_tick = Instant::now();

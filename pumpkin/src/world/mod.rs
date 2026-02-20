@@ -1232,6 +1232,9 @@ impl World {
             );
             (position, level_info.spawn_yaw, level_info.spawn_pitch)
         };
+        // Keep server-side position in sync with initial join position before chunk watch setup.
+        player.living_entity.entity.set_pos(position);
+        player.living_entity.entity.set_rotation(yaw, pitch);
         // Todo make the data less spread
         let level_settings = LevelSettings {
             seed: self.level.seed.0,
@@ -1529,11 +1532,6 @@ impl World {
             client_suggestions::send_c_commands_packet(player, server, &command_dispatcher).await;
         };
 
-        // Spawn in initial chunks
-        // This is made before the player teleport so that the player doesn't glitch out when spawning
-        chunker::update_position(player).await;
-
-        // Teleport
         let (position, yaw, pitch) = if player.has_played_before.load(Ordering::Relaxed) {
             let position = player.position();
             let yaw = player.living_entity.entity.yaw.load(); //info.spawn_angle;
@@ -1552,6 +1550,15 @@ impl World {
             );
             (position, info.spawn_yaw, info.spawn_pitch)
         };
+        // Keep server-side position in sync with initial join position before chunk watch setup.
+        player.living_entity.entity.set_pos(position);
+        player.living_entity.entity.set_rotation(yaw, pitch);
+
+        // Spawn in initial chunks
+        // This is made before the player teleport so that the player doesn't glitch out when spawning
+        chunker::update_position(player).await;
+
+        // Teleport
 
         let velocity = player.living_entity.entity.velocity.load();
 
