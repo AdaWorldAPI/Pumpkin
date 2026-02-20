@@ -190,7 +190,9 @@ pub enum LootPoolEntryTypesStruct {
     #[serde(rename = "minecraft:item")]
     Item(ItemEntryStruct),
     #[serde(rename = "minecraft:loot_table")]
-    LootTable,
+    LootTable {
+        value: String,
+    },
     #[serde(rename = "minecraft:dynamic")]
     Dynamic,
     #[serde(rename = "minecraft:tag")]
@@ -212,8 +214,8 @@ impl ToTokens for LootPoolEntryTypesStruct {
             Self::Item(item) => {
                 tokens.extend(quote! { LootPoolEntryTypes::Item(#item) });
             }
-            Self::LootTable => {
-                tokens.extend(quote! { LootPoolEntryTypes::LootTable });
+            Self::LootTable { value } => {
+                tokens.extend(quote! { LootPoolEntryTypes::LootTable(LootTableRefEntry { value: #value }) });
             }
             Self::Dynamic => {
                 tokens.extend(quote! { LootPoolEntryTypes::Dynamic });
@@ -261,7 +263,10 @@ pub enum LootConditionStruct {
     #[serde(rename = "minecraft:match_tool")]
     MatchTool { predicate: MatchToolPredicateStruct },
     #[serde(rename = "minecraft:table_bonus")]
-    TableBonus,
+    TableBonus {
+        enchantment: String,
+        chances: Vec<f32>,
+    },
     #[serde(rename = "minecraft:survives_explosion")]
     SurvivesExplosion,
     #[serde(rename = "minecraft:damage_source_properties")]
@@ -317,7 +322,13 @@ impl ToTokens for LootConditionStruct {
                 let pred_tokens = predicate.to_token_stream();
                 quote! { LootCondition::MatchTool { predicate: #pred_tokens } }
             }
-            Self::TableBonus => quote! { LootCondition::TableBonus },
+            Self::TableBonus {
+                enchantment,
+                chances,
+            } => {
+                let chance_tokens: Vec<_> = chances.iter().map(|c| quote! { #c }).collect();
+                quote! { LootCondition::TableBonus { enchantment: #enchantment, chances: &[#(#chance_tokens),*] } }
+            }
             Self::SurvivesExplosion => quote! { LootCondition::SurvivesExplosion },
             Self::DamageSourceProperties => {
                 quote! { LootCondition::DamageSourceProperties }

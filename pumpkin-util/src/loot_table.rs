@@ -31,6 +31,11 @@ pub struct AlternativeEntry {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
+pub struct LootTableRefEntry {
+    pub value: &'static str,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct MatchToolPredicate {
     pub items: Option<&'static str>,
     pub enchantments: Option<&'static [EnchantmentPredicate]>,
@@ -46,7 +51,7 @@ pub struct EnchantmentPredicate {
 pub enum LootPoolEntryTypes {
     Empty,
     Item(ItemEntry),
-    LootTable,
+    LootTable(LootTableRefEntry),
     Dynamic,
     Tag,
     Alternatives(AlternativeEntry),
@@ -79,7 +84,10 @@ pub enum LootCondition {
     MatchTool {
         predicate: MatchToolPredicate,
     },
-    TableBonus,
+    TableBonus {
+        enchantment: &'static str,
+        chances: &'static [f32],
+    },
     SurvivesExplosion,
     DamageSourceProperties,
     LocationCheck,
