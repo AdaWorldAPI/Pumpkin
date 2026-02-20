@@ -37,12 +37,11 @@ occurrences = 80
 notes = "Children array preserved, first matching child returned"
 
 [entry_types.LootTable]
-status = "stub"
+status = "stub_data"
 occurrences = 18
-missing_fields = ["value"]
+missing_fields = []
 json_format = '{ "type": "minecraft:loot_table", "value": "minecraft:gameplay/fishing/junk" }'
-notes = "value is string ref to another table (49x) or inline object (3x). Also has weight/quality."
-blocker = "codegen strips value field"
+notes = "value field now parsed + stored. Execution returns empty pending runtime loot table registry."
 
 [entry_types.Tag]
 status = "stub"
@@ -109,12 +108,11 @@ notes = "Recursive terms array, any() logic"
 priority = "P1 — DONE"
 
 [conditions.TableBonus]
-status = "bare_true"
+status = "done"
 occurrences = 29
-missing_fields = ["enchantment", "chances"]
 json_format = '{ "condition": "minecraft:table_bonus", "enchantment": "minecraft:fortune", "chances": [0.05, 0.0625, ...] }'
-priority = "P1"
-notes = "Fortune-based drop chance table (leaves→saplings, etc.)"
+priority = "P1 — DONE"
+notes = "enchantment + chances[] parsed. Execute: use chances[level] as drop probability (clamped to last index)."
 
 [conditions.EntityProperties]
 status = "bare_true"
@@ -312,9 +310,9 @@ P0_done = [
     "AllOf terms field (0 conditions) — DONE",
 ]
 
-P1_next = [
-    "TableBonus enchantment+chances (29 conditions)",
-    "LootTable value field (18 entries)",
+P1_done = [
+    "TableBonus enchantment+chances (29 conditions) — DONE (session 009)",
+    "LootTable value field parsed (18 entries) — DONE (session 009), execution pending runtime registry",
 ]
 
 # Missing function types — only matter for chest/gameplay loot (not in assets/)
