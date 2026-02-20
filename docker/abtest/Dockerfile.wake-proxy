@@ -1,0 +1,43 @@
+FROM rust:1-alpine3.23 AS builder
+ENV RUSTFLAGS="-C target-feature=-crt-static"
+RUN apk add --no-cache musl-dev git
+
+WORKDIR /pumpkin
+COPY . /pumpkin
+
+RUN rustup show active-toolchain || rustup toolchain install
+RUN rustup component add rustfmt
+
+# Build both backend server and wake-on-connect wrapper.
+RUN cargo build --release --bin pumpkin --bin wake_proxy \
+    && cp target/release/pumpkin ./pumpkin.release \
+    && cp target/release/wake_proxy ./wake_proxy.release
+
+FROM alpine:3.23
+
+COPY --from=builder /pumpkin/pumpkin.release /bin/pumpkin
+COPY --from=builder /pumpkin/wake_proxy.release /bin/wake_proxy
+
+WORKDIR /pumpkin
+
+RUN apk add --no-cache libgcc && chown 2613:2613 .
+
+ENV RUST_BACKTRACE=1
+ENV PUMPKIN_WAKE_LISTEN_ADDR=0.0.0.0:25565
+ENV PUMPKIN_WAKE_BACKEND_ADDR=127.0.0.1:25566
+ENV PUMPKIN_WAKE_TARGET_BIN=/bin/pumpkin
+ENV PUMPKIN_WAKE_IDLE_SECS=900
+ENV PUMPKIN_WAKE_RETRY_MS=100
+ENV PUMPKIN_WAKE_RETRIES=80
+ENV PUMPKIN_WAKE_WRITE_BACKEND_PORT=1
+ENV PUMPKIN_WAKE_BASIC_CONFIG_PATH=config/basic.toml
+ENV PUMPKIN_ENTITY_VICINITY_TICK=1
+ENV PUMPKIN_ENTITY_NEAR_BLOCKS=64
+ENV PUMPKIN_ENTITY_MID_BLOCKS=128
+ENV PUMPKIN_ENTITY_MID_INTERVAL=2
+ENV PUMPKIN_ENTITY_FAR_INTERVAL=8
+
+EXPOSE 25565
+USER 2613:2613
+ENTRYPOINT [ "/bin/wake_proxy" ]
+HEALTHCHECK CMD nc -z 127.0.0.1 25565 || exit 1

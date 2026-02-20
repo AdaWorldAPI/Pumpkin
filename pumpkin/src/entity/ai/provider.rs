@@ -8,6 +8,8 @@ use std::sync::OnceLock;
 pub enum AiProviderKind {
     Vanilla,
     ExperimentalV1,
+    #[cfg(feature = "holograph-provider")]
+    Holograph,
 }
 
 impl AiProviderKind {
@@ -15,10 +17,17 @@ impl AiProviderKind {
         match self {
             Self::Vanilla => "vanilla",
             Self::ExperimentalV1 => "experimental_v1",
+            #[cfg(feature = "holograph-provider")]
+            Self::Holograph => "holograph",
         }
     }
 
     fn from_env(raw: &str) -> Self {
+        #[cfg(feature = "holograph-provider")]
+        if raw.eq_ignore_ascii_case("holograph") || raw.eq_ignore_ascii_case("holo") {
+            return Self::Holograph;
+        }
+
         match raw {
             "experimental" | "experimental_v1" | "exp" => Self::ExperimentalV1,
             _ => Self::Vanilla,
