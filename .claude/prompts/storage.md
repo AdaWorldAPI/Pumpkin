@@ -72,6 +72,9 @@ Fix these before any other work. All in test code:
 
 Verify: `RUSTFLAGS="-Dwarnings" cargo clippy -p pumpkin-nbt --all-targets`
 
+## Upstream Debt (2026-02-20)
+- PORT: level.dat deserialization for imported worlds `a61238a`
+
 ## Your Task This Session
 
 Priority areas:
