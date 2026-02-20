@@ -2184,11 +2184,7 @@ impl JavaClient {
         // placement. (e.g. arrows/xp orbs/displays/markers should not)
         let state = BlockState::from_id(new_state);
         for shape in state.get_block_collision_shapes() {
-            let shape_at = shape.at_pos(final_block_pos);
-            let placed_box = BoundingBox {
-                min: shape_at.min,
-                max: shape_at.max,
-            };
+            let placed_box = shape.at_pos(final_block_pos).to_bounding_box();
 
             if Self::has_blocking_entity_in_box(world.as_ref(), &placed_box) {
                 return Ok(false);
