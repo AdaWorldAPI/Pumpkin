@@ -69,6 +69,12 @@ grep -B5 'owner = "world"' .claude/registry/bukkit_api.toml | grep 'name ='
 ```
 These are world/chunk events (ChunkLoadEvent, ChunkPopulateEvent, StructureGrowEvent, etc.) that fire during world generation and chunk management.
 
+## Upstream Debt (2026-02-20)
+- PORT: Lighting system from upstream `8aeeacf` (LARGE — new lighting/ module + chunk_system refactor)
+- PORT: Blender biome supplier hook from `581437e` (SMALL — single file)
+- AUDIT: chunk_system.rs has diverged significantly (upstream: +5077/-2933 in pumpkin-world/)
+- The chunk system was refactored upstream alongside lighting — consider porting both together
+
 ## Your Task This Session
 
 Priority areas:

@@ -84,6 +84,14 @@ grep -B5 'owner = "items"' .claude/registry/bukkit_api.toml | grep 'name ='
 ```
 These are inventory events (InventoryClickEvent, InventoryDragEvent, CraftItemEvent, etc.) and enchantment events.
 
+## Upstream Debt (2026-02-20)
+- PORT: Inventory saving/loading `fb0750c` (13 conflicts — LARGE)
+- PORT: Close container on block destroy `ba30b4e` (12 conflicts — LARGE)
+- PORT: Double-click slot fix `e75e63a` (2 conflicts)
+- PORT: Creative drag + middle click `854d9ce` (1 conflict)
+- PORT: Campfire vanilla logic `97951df`
+- PORT: Firework data components `501eb25`
+
 ## Your Task This Session
 
 Priority areas:

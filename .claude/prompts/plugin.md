@@ -85,6 +85,11 @@ grep 'owner = ' .claude/registry/bukkit_api.toml | sed 's/.*owner = "\(.*\)"/\1/
 - **Entity:** Must fire EntitySpawnEvent, EntityDamageEvent, EntityDamageByEntityEvent, EntityDeathEvent in entity lifecycle
 - These are outside your write boundaries. You defined the events; other agents wire them.
 
+## Upstream Debt (2026-02-20)
+- PORT: Custom Payload `a96eca4` (5 conflicts)
+- PORT: Entity interaction + block placement events `74e1cd1`
+- PORT: Permission check event `33cb4e5`
+
 ## Your Task This Session
 
 Priority areas:

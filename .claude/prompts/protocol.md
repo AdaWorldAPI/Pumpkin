@@ -80,6 +80,11 @@ Fix these before any other work. dto/mod.rs is Architect-written code in your cr
 
 Verify: `RUSTFLAGS="-Dwarnings" cargo clippy -p pumpkin-protocol --all-targets --all-features`
 
+## Upstream Debt (2026-02-20)
+- PORT: Packet encode/decode/compression perf `9f78d65` (4 conflicts)
+- PORT: Sound event ID ordering `b22e667` (2 conflicts)
+- PORT: Velocity encoding fixes `2ee194b` + `48b3d67` + `3cbf788`
+
 ## Your Task This Session
 
 Priority areas:

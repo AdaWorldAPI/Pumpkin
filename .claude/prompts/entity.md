@@ -86,6 +86,15 @@ The Plugin agent defined 4 entity events that are **ready but not wired**. You M
 
 These events are cancellable. If the event is cancelled after firing, the action should be skipped (e.g., don't actually spawn, don't apply damage, don't kill).
 
+## Upstream Debt (2026-02-20)
+- CHERRY-PICK: `8433f05` (mobs attacking when dead), `a653726` (knockback on kill), `3f170e4` (teleport)
+- PORT: Collision fix `e438e09` (5 conflicts), totem fix `5a5b9e4` (6 conflicts)
+- PORT: Pathfinder from vanilla `8b6c8bb` (LARGE — replaces our basic pathfinding)
+- PORT: Boat implementation `b77d9c1`, creeper AI `ce46bf8`, eye height `74ecc3b`
+- AUDIT: Upstream added 14 mob AI commits (chicken/cow/sheep/bat/cat/creeper/breed/follow/beg/avoid)
+  Our system has 81 types + 21 goals. Audit for vanilla logic we're missing, don't duplicate.
+- FIX: Spectator explosion + TNT fuse `59b7e0a`, item drop velocity `15fbf8f`
+
 ## Your Task This Session
 
 Priority areas:
