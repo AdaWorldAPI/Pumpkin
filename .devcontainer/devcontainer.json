@@ -15,7 +15,10 @@
 		"vscode": {
 			"extensions": [
 				"eamodio.gitlens",
-				"Swellaby.rust-pack"
+				"Swellaby.rust-pack",
+				"GitHub.copilot-chat",
+				"Anthropic.claude-code",
+				"openai.chatgpt"
 			]
 		}
 	}
