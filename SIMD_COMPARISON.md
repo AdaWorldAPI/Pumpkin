@@ -232,5 +232,64 @@ This pattern is exactly what ndarray's `unrolled_fold` and Pumpkin's density arr
 
 ---
 
-*Analysis generated 2026-03-21. Based on Pumpkin-MC/Pumpkin main branch, rust-ndarray/ndarray main
-branch, and Rust 1.94.0 stable SIMD status.*
+---
+
+## 7. Pumpkin ARCH-029 Vision: SIMD CAM & ndarray Column Synergy
+
+Pumpkin's architectural decision log (ARCH-029/030/031) outlines a long-term vision for
+**SIMD Content-Addressable Memory (CAM)** using AVX-512 over Arrow columnar data:
+
+```text
+Current:  for entity in entities { entity.tick() }  // sequential O(n)
+Future:   CAM[x,y,z].bind(entity)     // spatial index
+          AVX-512 batch tick per region // 16x f32 parallel per SIMD lane
+```
+
+### Where ndarray Fits In
+
+The Arrow columnar substrate (`[x: f32, y: f32, z: f32, entity_id: u32, goal_state: u64]`)
+is essentially a struct-of-arrays (SoA) layout — which is exactly what ndarray excels at:
+
+| ARCH-029 Concept | ndarray Equivalent |
+|---|---|
+| Arrow `RecordBatch` columns | `Array1<f32>` per spatial dimension |
+| 16 entities per AVX-512 lane | `Simd<f32, 16>` over contiguous ndarray slice |
+| Spatial bind/unbind | ndarray masked assignment / `Zip::from(mask)` |
+| XOR overlay (ARCH-027) | ndarray bitwise ops on `Array1<u64>` |
+| Height reduction (ARCH-030) | `Array2<u8>` with 256-column surface-relative encoding |
+
+### Concrete Integration Path
+
+1. **Phase 1 (Now):** Use ndarray `Array2<f32>` for entity position columns instead of `Vec<Entity>`.
+   Batch noise generation already maps to `Array1<f64>` fill patterns.
+
+2. **Phase 2:** ndarray's `Zip` with `pulp`/`macerator` for explicit SIMD over position arrays —
+   no need to wait for `std::simd` stabilization.
+
+3. **Phase 3 (ARCH-029):** Arrow `RecordBatch` ↔ ndarray zero-copy via `ArrayView` over Arrow
+   buffers. ndarray already supports creating views from raw pointers — Arrow buffers are compatible.
+
+4. **Phase 4:** AVX-512 batch tick kernels. ndarray's `matrixmultiply` pattern (runtime CPU
+   detection → dispatch) is the proven approach:
+   ```rust
+   if is_x86_feature_detected!("avx512f") {
+       batch_tick_avx512(entity_columns);
+   } else if is_x86_feature_detected!("avx2") {
+       batch_tick_avx2(entity_columns);
+   } else {
+       batch_tick_scalar(entity_columns);
+   }
+   ```
+
+### ARCH-031 Redstone Benchmark: ndarray as Spatial Grid
+
+The 8 FPS redstone computer benchmark (ARCH-031) needs to evaluate thousands of redstone positions
+per tick. ndarray `Array3<u8>` as the redstone signal grid enables:
+- SIMD XOR between tick N and tick N+1 (change detection)
+- Batch signal propagation via ndarray strided iteration over adjacent cells
+- The 256-block height reduction (ARCH-030) maps to `Array2<u8>` slicing
+
+---
+
+*Analysis generated 2026-03-21. Based on Pumpkin-MC/Pumpkin main branch (+ ARCH-029 vision),
+rust-ndarray/ndarray main branch, and Rust 1.94.0 stable SIMD status.*
