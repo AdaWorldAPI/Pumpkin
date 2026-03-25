@@ -51,7 +51,7 @@ use std::pin::Pin;
 use std::sync::{
     Arc,
     atomic::{
-        AtomicBool, AtomicI32, AtomicU32,
+        AtomicBool, AtomicI32, AtomicU8, AtomicU32,
         Ordering::{self, Relaxed},
     },
 };
@@ -396,6 +396,14 @@ pub struct Entity {
     pub velocity_dirty: AtomicBool,
     /// Set when an Entity is to be removed but could still be referenced
     pub removed: AtomicBool,
+    /// The last sent yaw value (encoded as u8) for change detection
+    pub last_sent_yaw: AtomicU8,
+    /// The last sent pitch value (encoded as u8) for change detection
+    pub last_sent_pitch: AtomicU8,
+    /// Cache for the last sent position to optimize Entity Pos update packets
+    pub last_sent_pos: AtomicCell<Vector3<f64>>,
+    /// Cache for the last sent head yaw byte
+    pub last_sent_head_yaw: AtomicU8,
 }
 
 /// Pure, synchronous collision math extracted from `adjust_movement_for_collisions`.
@@ -568,6 +576,10 @@ impl Entity {
             movement_multiplier: AtomicCell::new(Vector3::default()),
             velocity_dirty: AtomicBool::new(true),
             removed: AtomicBool::new(false),
+            last_sent_yaw: AtomicU8::new(0),
+            last_sent_pitch: AtomicU8::new(0),
+            last_sent_head_yaw: AtomicU8::new(0),
+            last_sent_pos: AtomicCell::new(position),
         }
     }
 
@@ -692,22 +704,22 @@ impl Entity {
         let yaw = self.yaw.load();
         let pitch = self.pitch.load();
 
-        // Broadcast the update packet.
-
-        // TODO: Do caching to only send the packet when needed.
-
-        let yaw = (yaw * 256.0 / 360.0).rem_euclid(256.0);
-
         let yaw = (yaw * 256.0 / 360.0).rem_euclid(256.0) as u8;
+        let pitch = (pitch * 256.0 / 360.0).rem_euclid(256.0) as u8;
 
-        let pitch = (pitch * 256.0 / 360.0).rem_euclid(256.0);
+        if yaw == self.last_sent_yaw.load(Relaxed) && pitch == self.last_sent_pitch.load(Relaxed) {
+            return;
+        }
+
+        self.last_sent_yaw.store(yaw, Relaxed);
+        self.last_sent_pitch.store(pitch, Relaxed);
 
         self.world
             .load()
             .broadcast_packet_all(&CUpdateEntityRot::new(
                 self.entity_id.into(),
                 yaw,
-                pitch as u8,
+                pitch,
                 self.on_ground.load(Relaxed),
             ))
             .await;
@@ -716,6 +728,11 @@ impl Entity {
     }
 
     pub async fn send_head_rot(&self, head_yaw: u8) {
+        if head_yaw == self.last_sent_head_yaw.load(Relaxed) {
+            return;
+        }
+        self.last_sent_head_yaw.store(head_yaw, Relaxed);
+
         self.world
             .load()
             .broadcast_packet_all(&CHeadRot::new(self.entity_id.into(), head_yaw))
