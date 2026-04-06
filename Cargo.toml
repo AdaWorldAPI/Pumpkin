@@ -171,3 +171,7 @@ arc-swap = "1.8"
 tokio-util = "0.7.18"
 toml = "0.9"
 ureq = "3.2.0"
+
+# Hardware acceleration — AdaWorldAPI/ndarray fork with portable SIMD abstractions,
+# multi-tier dispatch (AMX → AVX-512 → AVX2 → NEON → scalar), and intrinsic elimination.
+ndarray = { git = "https://github.com/AdaWorldAPI/ndarray", branch = "master" }

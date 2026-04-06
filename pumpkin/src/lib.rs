@@ -175,7 +175,6 @@ pub struct PumpkinServer {
 }
 
 impl PumpkinServer {
-    #[expect(clippy::if_then_some_else_none)]
     pub async fn new(
         basic_config: BasicConfiguration,
         advanced_config: AdvancedConfiguration,

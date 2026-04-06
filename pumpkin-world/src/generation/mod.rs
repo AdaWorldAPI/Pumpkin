@@ -47,7 +47,7 @@ impl GlobalRandomConfig {
         let random_deriver = if legacy {
             LegacyRand::from_seed(seed).next_splitter()
         } else {
-            Xoroshiro::from_seed(seed).next_splitter()
+            RandomDeriver::Xoroshiro(Xoroshiro::from_seed(seed).next_splitter())
         };
 
         let aquifer_deriver = random_deriver

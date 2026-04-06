@@ -1,11 +1,10 @@
 use core::f32;
-use std::collections::{BinaryHeap, HashSet, VecDeque};
+use std::collections::{BinaryHeap, HashMap, HashSet, VecDeque};
 use std::f64::consts::TAU;
 use std::mem;
 use std::num::NonZeroU8;
-use std::ops::AddAssign;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicI32, AtomicI64, AtomicU8, AtomicU32, Ordering};
+use std::sync::{Arc, Weak};
 use std::time::{Duration, Instant};
 
 use arc_swap::ArcSwap;
@@ -140,16 +139,18 @@ pub struct ChunkManager {
     center: Vector2<i32>,
     view_distance: u8,
     chunk_listener: Receiver<(Vector2<i32>, SyncChunk)>,
-    chunk_sent: HashSet<Vector2<i32>>,
+    chunk_sent: HashMap<Vector2<i32>, Weak<ChunkData>>,
     chunk_queue: BinaryHeap<HeapNode>,
     entity_chunk_queue: VecDeque<(Vector2<i32>, SyncEntityChunk)>,
     batches_sent_since_ack: BatchState,
+    last_chunk_batch_sent_at: Instant,
     /// The current world for chunk loading. Updated on dimension change.
     world: Arc<World>,
 }
 
 impl ChunkManager {
     pub const NOTCHIAN_BATCHES_WITHOUT_ACK_UNTIL_PAUSE: u8 = 10;
+    const ACK_STALL_FALLBACK_DELAY: Duration = Duration::from_millis(250);
 
     #[must_use]
     pub fn new(
@@ -162,10 +163,11 @@ impl ChunkManager {
             center: Vector2::<i32>::new(0, 0),
             view_distance: 0,
             chunk_listener,
-            chunk_sent: HashSet::new(),
+            chunk_sent: HashMap::new(),
             chunk_queue: BinaryHeap::new(),
             entity_chunk_queue: VecDeque::new(),
             batches_sent_since_ack: BatchState::Initial,
+            last_chunk_batch_sent_at: Instant::now(),
             world,
         }
     }
@@ -174,6 +176,28 @@ impl ChunkManager {
     #[must_use]
     pub const fn world(&self) -> &Arc<World> {
         &self.world
+    }
+
+    #[must_use]
+    const fn ack_window_open(&self) -> bool {
+        match self.batches_sent_since_ack {
+            BatchState::Count(count) => count < Self::NOTCHIAN_BATCHES_WITHOUT_ACK_UNTIL_PAUSE,
+            BatchState::Initial => true,
+            BatchState::Waiting => false,
+        }
+    }
+
+    #[must_use]
+    fn ack_fallback_ready(&self) -> bool {
+        !self.ack_window_open()
+            && self.last_chunk_batch_sent_at.elapsed() >= Self::ACK_STALL_FALLBACK_DELAY
+    }
+
+    fn should_enqueue_chunk(&mut self, position: Vector2<i32>, chunk: &SyncChunk) -> bool {
+        self.chunk_sent
+            .insert(position, Arc::downgrade(chunk))
+            .and_then(|old_chunk| old_chunk.upgrade())
+            .is_none_or(|old_chunk| !Arc::ptr_eq(&old_chunk, chunk))
     }
 
     pub fn pull_new_chunks(&mut self) {
@@ -185,7 +209,7 @@ impl ChunkManager {
             if dst > i32::from(self.view_distance) {
                 continue;
             }
-            if self.chunk_sent.insert(pos) {
+            if self.should_enqueue_chunk(pos, &chunk) {
                 // log::debug!("receive new chunk {pos:?}");
                 self.chunk_queue.push(HeapNode(dst, pos, chunk));
             }
@@ -224,21 +248,24 @@ impl ChunkManager {
         self.center = center;
         self.view_distance = view_distance;
         let view_distance_i32 = i32::from(view_distance);
+        let unloading_chunks: HashSet<Vector2<i32>> = unloading_chunks.iter().copied().collect();
 
-        self.chunk_sent
-            .retain(|pos| !unloading_chunks.contains(pos));
+        self.chunk_sent.retain(|pos, _| {
+            (pos.x - center.x).abs().max((pos.y - center.y).abs()) <= view_distance_i32
+                && !unloading_chunks.contains(pos)
+        });
 
         let mut new_queue = BinaryHeap::with_capacity(self.chunk_queue.len());
         for node in self.chunk_queue.drain() {
             let dst = (node.1.x - center.x).abs().max((node.1.y - center.y).abs());
-            if dst <= view_distance_i32 {
+            if dst <= view_distance_i32 && !unloading_chunks.contains(&node.1) {
                 new_queue.push(HeapNode(dst, node.1, node.2));
             }
         }
         self.chunk_queue = new_queue;
 
         for pos in loading_chunks {
-            if !self.chunk_sent.contains(pos)
+            if !self.chunk_sent.contains_key(pos)
                 && let Some(chunk) = level.loaded_chunks.get(pos)
             {
                 self.push_chunk(*pos, chunk.value().clone());
@@ -272,6 +299,7 @@ impl ChunkManager {
         self.world = new_world;
         // Reset batch state so chunks can be sent immediately in the new dimension
         self.batches_sent_since_ack = BatchState::Initial;
+        self.last_chunk_batch_sent_at = Instant::now();
     }
 
     pub fn handle_acknowledge(&mut self, chunks_per_tick: f32) {
@@ -280,11 +308,12 @@ impl ChunkManager {
     }
 
     pub fn push_chunk(&mut self, position: Vector2<i32>, chunk: SyncChunk) {
-        self.chunk_sent.insert(position);
-        let dst = (position.x - self.center.x)
-            .abs()
-            .max((position.y - self.center.y).abs());
-        self.chunk_queue.push(HeapNode(dst, position, chunk));
+        if self.should_enqueue_chunk(position, &chunk) {
+            let dst = (position.x - self.center.x)
+                .abs()
+                .max((position.y - self.center.y).abs());
+            self.chunk_queue.push(HeapNode(dst, position, chunk));
+        }
     }
 
     pub fn push_entity(&mut self, position: Vector2<i32>, chunk: SyncEntityChunk) {
@@ -293,17 +322,13 @@ impl ChunkManager {
 
     #[must_use]
     pub fn can_send_chunk(&self) -> bool {
-        let state_available = match self.batches_sent_since_ack {
-            BatchState::Count(count) => count < Self::NOTCHIAN_BATCHES_WITHOUT_ACK_UNTIL_PAUSE,
-            BatchState::Initial => true,
-            BatchState::Waiting => false,
-        };
+        let state_available = self.ack_window_open() || self.ack_fallback_ready();
 
         state_available && !self.chunk_queue.is_empty()
     }
 
     pub fn next_chunk(&mut self) -> Box<[SyncChunk]> {
-        let mut chunk_size = self.chunk_queue.len().min(self.chunks_per_tick);
+        let mut chunk_size = self.chunk_queue.len().min(self.chunks_per_tick.max(1));
         let mut chunks = Vec::<Arc<ChunkData>>::with_capacity(chunk_size);
         while chunk_size > 0 {
             chunks.push(self.chunk_queue.pop().unwrap().2);
@@ -311,17 +336,21 @@ impl ChunkManager {
         }
         match &mut self.batches_sent_since_ack {
             BatchState::Count(count) => {
-                count.add_assign(1);
+                *count = count.saturating_add(1);
             }
             state @ BatchState::Initial => *state = BatchState::Waiting,
             BatchState::Waiting => (),
         }
+        self.last_chunk_batch_sent_at = Instant::now();
 
         chunks.into_boxed_slice()
     }
 
     pub fn next_entity(&mut self) -> Box<[SyncEntityChunk]> {
-        let chunk_size = self.entity_chunk_queue.len().min(self.chunks_per_tick);
+        let chunk_size = self
+            .entity_chunk_queue
+            .len()
+            .min(self.chunks_per_tick.max(1));
 
         let chunks: Box<[Arc<ChunkEntityData>]> = self
             .entity_chunk_queue
@@ -331,11 +360,12 @@ impl ChunkManager {
 
         match &mut self.batches_sent_since_ack {
             BatchState::Count(count) => {
-                count.add_assign(1);
+                *count = count.saturating_add(1);
             }
             state @ BatchState::Initial => *state = BatchState::Waiting,
-            BatchState::Waiting => unreachable!(),
+            BatchState::Waiting => (),
         }
+        self.last_chunk_batch_sent_at = Instant::now();
 
         chunks
     }

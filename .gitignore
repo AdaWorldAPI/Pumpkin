@@ -168,3 +168,6 @@ world_the_end/
 # === FORK-SPECIFIC (Railway deployment) ===
 Dockerfile
 docker-compose.yml
+
+# Pre-SIMD archive of overwritten files
+.archive/

@@ -6,7 +6,7 @@ rust-version.workspace = true
 
 [dependencies]
 pumpkin-nbt.workspace = true
-pumpkin-util.workspace = true
+pumpkin-util = { workspace = true, features = ["simd"] }
 pumpkin-config.workspace = true
 pumpkin-data.workspace = true
 
