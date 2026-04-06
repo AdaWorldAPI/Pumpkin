@@ -26,6 +26,9 @@ pub mod y_offset;
 
 pub mod jwt;
 
+#[cfg(feature = "simd")]
+pub mod simd;
+
 #[derive(Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum HeightMap {

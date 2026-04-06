@@ -406,6 +406,54 @@ impl SpatialOverlay {
     }
 }
 
+// ── SIMD-accelerated methods (feature = "simd") ──────────────────────
+//
+// When `pumpkin-util/simd` is enabled, these delegate to ndarray-backed
+// batch operations that auto-dispatch to AVX-512 / AVX2 / NEON.
+// The scalar methods above remain available regardless of feature flags.
+
+#[cfg(feature = "simd")]
+impl SpatialOverlay {
+    /// SIMD-accelerated XOR diff.
+    #[must_use]
+    pub fn xor_diff_simd(&self, other: &Self) -> Self {
+        let mut result = Self::EMPTY;
+        pumpkin_util::simd::spatial::xor_words(&self.bits, &other.bits, &mut result.bits);
+        result
+    }
+
+    /// SIMD-accelerated Hamming weight (popcount).
+    #[must_use]
+    pub fn hamming_weight_simd(&self) -> u32 {
+        pumpkin_util::simd::spatial::popcount_words(&self.bits)
+    }
+
+    /// SIMD-accelerated Hamming distance.
+    #[must_use]
+    pub fn hamming_distance_simd(&self, other: &Self) -> u32 {
+        pumpkin_util::simd::spatial::hamming_distance(&self.bits, &other.bits)
+    }
+
+    /// SIMD-accelerated OR-merge: accumulate `other` into `self`.
+    pub fn or_merge_simd(&mut self, other: &Self) {
+        pumpkin_util::simd::spatial::or_accumulate(&other.bits, &mut self.bits);
+    }
+
+    /// SIMD-accelerated AND intersection.
+    #[must_use]
+    pub fn and_intersect_simd(&self, other: &Self) -> Self {
+        let mut result = Self::EMPTY;
+        pumpkin_util::simd::spatial::and_words(&self.bits, &other.bits, &mut result.bits);
+        result
+    }
+
+    /// SIMD-accelerated equality check.
+    #[must_use]
+    pub fn eq_simd(&self, other: &Self) -> bool {
+        pumpkin_util::simd::spatial::overlays_equal(&self.bits, &other.bits)
+    }
+}
+
 impl Default for SpatialOverlay {
     fn default() -> Self {
         Self::new()

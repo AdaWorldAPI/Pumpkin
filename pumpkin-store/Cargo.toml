@@ -14,6 +14,9 @@ serde_json.workspace = true
 # TOML backend (default) — wraps pumpkin-data static arrays, zero new deps
 pumpkin-data = { workspace = true, optional = true }
 
+# Hardware acceleration for SpatialOverlay XOR/popcount/Hamming (optional)
+pumpkin-util = { workspace = true, features = ["simd"], optional = true }
+
 # Lance backend deps — added in Phase 4 when implementation is ready.
 # Chrono conflict RESOLVED as of lance 2.0.0 (2026-02-05): chrono ^0.4.41.
 # Verified compatible versions: lance 2.0.0, lancedb 0.26.1, arrow 57, datafusion 51.
@@ -24,6 +27,7 @@ pumpkin-data = { workspace = true, optional = true }
 default = ["toml-store"]
 toml-store = ["dep:pumpkin-data"]
 lance-store = [] # Phase 4: lancedb 0.26+, lance 2.0, arrow 57, datafusion 51
+simd = ["dep:pumpkin-util"]
 
 # Extended store — reserved for future columnar/vector deps (Lance, Arrow, Calcite).
 # All additive types (ZeroCopyGuard, GameMappingRecord, MobGoalState, CachedStore)
